@@ -6,6 +6,7 @@ import { useRouter } from 'next/router';
 import { apiCall, getToken, removeToken } from '@/lib/api';
 import TodoList from '@/components/TodoList';
 import TodoForm from '@/components/TodoForm';
+import ChatPanel from '@/components/ChatPanel';
 import { TodoResponse } from '../types';
 
 export default function Todos() {
@@ -139,6 +140,9 @@ export default function Todos() {
         onUpdate={handleUpdate}
         onDelete={handleDelete}
       />
+
+      {/* Phase 3: AI Chatbot Interface */}
+      <ChatPanel token={getToken()} />
     </div>
   );
 }
