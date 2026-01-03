@@ -1,0 +1,557 @@
+openapi: 3.0.3
+info:
+  title: Todo Application API - Phase 5
+  description: |
+    Event-driven todo application with advanced features:
+    - Priority management (High/Medium/Low)
+    - Tag-based organization
+    - Due date tracking with overdue indicators
+    - Full-text search with query syntax
+    - Recurring tasks (Daily/Weekly/Monthly)
+    - Event sourcing via Dapr pub/sub
+  version: 5.0.0
+  contact:
+    name: Todo Application Support
+    email: support@todos.example.com
+
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+  - url: https://api.todos.example.com
+    description: Production server (Azure AKS)
+
+tags:
+  - name: authentication
+    description: User authentication and registration
+  - name: todos-v5
+    description: Phase 5 todo CRUD operations with advanced features
+  - name: search
+    description: Full-text search with query syntax
+  - name: health
+    description: Health checks and monitoring
+
+paths:
+  /api/v5/todos:
+    get:
+      tags:
+        - todos-v5
+      summary: List todos with filtering and sorting
+      description: |
+        Retrieve todos for authenticated user with optional filters:
+        - Priority filter (High/Medium/Low)
+        - Tag filter (comma-separated, OR logic)
+        - Due date range filter
+        - Status filter (pending/completed)
+        - Sort by priority or created_at
+      operationId: list_todos_v5
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: priority
+          in: query
+          schema:
+            type: string
+            enum: [High, Medium, Low]
+          description: Filter by priority
+        - name: tags
+          in: query
+          schema:
+            type: string
+          description: Comma-separated tags (e.g., "#work,#urgent")
+        - name: due_date_start
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter todos with due_date >= this date
+        - name: due_date_end
+          in: query
+          schema:
+            type: string
+            format: date
+          description: Filter todos with due_date <= this date
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, completed, archived]
+          description: Filter by status
+        - name: sort_by
+          in: query
+          schema:
+            type: string
+            enum: [priority, created_at]
+            default: created_at
+          description: Sort order
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+    post:
+      tags:
+        - todos-v5
+      summary: Create a new todo
+      description: |
+        Create a new todo with Phase 5 advanced features:
+        - Priority (defaults to Medium)
+        - Tags (max 10, auto-prefixed with #)
+        - Due date (optional)
+        - Recurring configuration (Daily/Weekly/Monthly)
+
+        Publishes TodoCreated event to Dapr pub/sub.
+      operationId: create_todo_v5
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoCreate'
+      responses:
+        '201':
+          description: Todo created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v5/todos/search:
+    get:
+      tags:
+        - search
+      summary: Search todos with advanced query syntax
+      description: |
+        Full-text search with support for:
+        - Plain text: "meeting" (searches title)
+        - Tags: "#work #urgent" (filters by tags)
+        - Priority: "priority:High" (filters by priority)
+        - Status: "status:pending" (filters by status)
+        - Combined: "meeting #work priority:High"
+
+        Returns results with relevance scoring and highlighted matches.
+        Performance target: ≤300ms for 10,000+ todos.
+      operationId: search_todos
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Search query with syntax support
+          example: "meeting #work priority:High"
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+          description: Maximum number of results
+      responses:
+        '200':
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SearchResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v5/todos/{todo_id}:
+    patch:
+      tags:
+        - todos-v5
+      summary: Update a todo
+      description: |
+        Update todo fields (partial update).
+        Publishes TodoUpdated event with before/after state.
+      operationId: update_todo_v5
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: todo_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TodoUpdate'
+      responses:
+        '200':
+          description: Todo updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    delete:
+      tags:
+        - todos-v5
+      summary: Delete a todo
+      description: |
+        Delete a todo permanently.
+        - Publishes TodoDeleted event
+        - If recurring, cancels all future occurrences
+      operationId: delete_todo_v5
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: todo_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: Todo deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /api/v5/todos/{todo_id}/complete:
+    patch:
+      tags:
+        - todos-v5
+      summary: Mark todo as completed
+      description: |
+        Mark todo as completed.
+        - Publishes TodoCompleted event
+        - If recurring, generates next occurrence with calculated due_date
+      operationId: complete_todo_v5
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: todo_id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Todo completed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TodoResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /auth/signup:
+    post:
+      tags:
+        - authentication
+      summary: Register a new user
+      operationId: signup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserSignup'
+      responses:
+        '201':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /auth/login:
+    post:
+      tags:
+        - authentication
+      summary: Authenticate user
+      operationId: login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserLogin'
+      responses:
+        '200':
+          description: Login successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /health:
+    get:
+      tags:
+        - health
+      summary: Health check endpoint
+      description: Check application and Dapr sidecar health
+      operationId: health_check
+      responses:
+        '200':
+          description: Service healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: healthy
+                  dapr:
+                    type: string
+                    example: reachable
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    TodoCreate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+          example: "Complete Phase 5 implementation"
+        priority:
+          type: string
+          enum: [High, Medium, Low]
+          default: Medium
+          example: "High"
+        tags:
+          type: array
+          items:
+            type: string
+            pattern: '^#[a-zA-Z0-9_]+$'
+          maxItems: 10
+          example: ["#work", "#urgent"]
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-01-15"
+        is_recurring:
+          type: boolean
+          default: false
+          example: true
+        recurrence_pattern:
+          type: string
+          enum: [Daily, Weekly, Monthly]
+          nullable: true
+          example: "Daily"
+
+    TodoUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 500
+        priority:
+          type: string
+          enum: [High, Medium, Low]
+        tags:
+          type: array
+          items:
+            type: string
+          maxItems: 10
+        due_date:
+          type: string
+          format: date
+          nullable: true
+        status:
+          type: string
+          enum: [pending, completed, archived]
+        is_recurring:
+          type: boolean
+        recurrence_pattern:
+          type: string
+          enum: [Daily, Weekly, Monthly]
+          nullable: true
+
+    TodoResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+          example: 42
+        user_id:
+          type: integer
+          example: 1
+        title:
+          type: string
+          example: "Complete Phase 5 implementation"
+        status:
+          type: string
+          enum: [pending, completed, archived]
+          example: "pending"
+        priority:
+          type: string
+          enum: [High, Medium, Low]
+          example: "High"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["#work", "#urgent"]
+        due_date:
+          type: string
+          format: date
+          nullable: true
+          example: "2026-01-15"
+        is_recurring:
+          type: boolean
+          example: true
+        recurrence_pattern:
+          type: string
+          enum: [Daily, Weekly, Monthly]
+          nullable: true
+          example: "Daily"
+        parent_todo_id:
+          type: integer
+          nullable: true
+          example: null
+        created_at:
+          type: string
+          format: date-time
+          example: "2026-01-02T10:30:00Z"
+
+    TodoListResponse:
+      type: object
+      properties:
+        todos:
+          type: array
+          items:
+            $ref: '#/components/schemas/TodoResponse'
+
+    SearchResponse:
+      type: object
+      properties:
+        results:
+          type: array
+          items:
+            allOf:
+              - $ref: '#/components/schemas/TodoResponse'
+              - type: object
+                properties:
+                  highlighted_title:
+                    type: string
+                    description: Title with <mark> tags for matched text
+                    example: "Complete <mark>Phase</mark> 5 implementation"
+                  relevance_score:
+                    type: number
+                    format: float
+                    description: Relevance score from PostgreSQL ts_rank
+                    example: 0.8573
+        count:
+          type: integer
+          example: 15
+        query:
+          type: string
+          example: "meeting #work priority:High"
+
+    UserSignup:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          minLength: 8
+          example: "secureP@ssw0rd"
+
+    UserLogin:
+      type: object
+      required:
+        - email
+        - password
+      properties:
+        email:
+          type: string
+          format: email
+          example: "user@example.com"
+        password:
+          type: string
+          format: password
+          example: "secureP@ssw0rd"
+
+    AuthResponse:
+      type: object
+      properties:
+        user_id:
+          type: integer
+          example: 1
+        email:
+          type: string
+          example: "user@example.com"
+        token:
+          type: string
+          example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+
+    Error:
+      type: object
+      properties:
+        detail:
+          type: string
+          example: "Todo with ID 999 not found"
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Unauthorized:
+      description: Unauthorized - missing or invalid token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'

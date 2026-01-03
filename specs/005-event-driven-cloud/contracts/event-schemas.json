@@ -1,0 +1,405 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Todo Application Event Schemas - Phase 5",
+  "description": "JSON Schema definitions for CloudEvents published via Dapr pub/sub to Kafka topic 'todos.events'",
+  "definitions": {
+    "CloudEvent": {
+      "type": "object",
+      "description": "CloudEvents 1.0 specification wrapper for todo events",
+      "required": ["specversion", "type", "source", "id", "time", "datacontenttype", "data"],
+      "properties": {
+        "specversion": {
+          "type": "string",
+          "const": "1.0",
+          "description": "CloudEvents specification version"
+        },
+        "type": {
+          "type": "string",
+          "description": "Event type identifier",
+          "examples": ["com.todos.todo.created", "com.todos.todo.updated"]
+        },
+        "source": {
+          "type": "string",
+          "description": "Event source (Dapr app-id)",
+          "examples": ["todos-backend"]
+        },
+        "id": {
+          "type": "string",
+          "format": "uuid",
+          "description": "Unique event identifier"
+        },
+        "time": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Event timestamp (ISO 8601)"
+        },
+        "datacontenttype": {
+          "type": "string",
+          "const": "application/json",
+          "description": "Content type of data field"
+        },
+        "data": {
+          "type": "object",
+          "description": "Event payload (one of TodoCreatedEvent, TodoUpdatedEvent, etc.)"
+        }
+      }
+    },
+    "TodoCreatedEvent": {
+      "type": "object",
+      "description": "Published when a new todo is created (POST /api/v5/todos)",
+      "required": ["event_type", "todo_id", "user_id", "timestamp", "payload"],
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "const": "TodoCreated"
+        },
+        "todo_id": {
+          "type": "integer",
+          "description": "ID of the created todo"
+        },
+        "user_id": {
+          "type": "integer",
+          "description": "ID of the user who created the todo"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Event creation timestamp (ISO 8601)"
+        },
+        "payload": {
+          "type": "object",
+          "description": "Full todo state at creation",
+          "required": ["todo_id", "title", "status", "priority", "tags", "created_at"],
+          "properties": {
+            "todo_id": {
+              "type": "integer",
+              "example": 42
+            },
+            "title": {
+              "type": "string",
+              "maxLength": 500,
+              "example": "Complete Phase 5 implementation"
+            },
+            "status": {
+              "type": "string",
+              "enum": ["pending", "completed", "archived"],
+              "example": "pending"
+            },
+            "priority": {
+              "type": "string",
+              "enum": ["High", "Medium", "Low"],
+              "example": "High"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "maxItems": 10,
+              "example": ["#work", "#urgent"]
+            },
+            "due_date": {
+              "type": "string",
+              "format": "date",
+              "nullable": true,
+              "example": "2026-01-15"
+            },
+            "is_recurring": {
+              "type": "boolean",
+              "example": false
+            },
+            "recurrence_pattern": {
+              "type": "string",
+              "enum": ["Daily", "Weekly", "Monthly"],
+              "nullable": true,
+              "example": null
+            },
+            "created_at": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-01-02T10:30:00Z"
+            }
+          }
+        }
+      },
+      "example": {
+        "event_type": "TodoCreated",
+        "todo_id": 42,
+        "user_id": 1,
+        "timestamp": "2026-01-02T10:30:05Z",
+        "payload": {
+          "todo_id": 42,
+          "title": "Complete Phase 5 implementation",
+          "status": "pending",
+          "priority": "High",
+          "tags": ["#work", "#urgent"],
+          "due_date": "2026-01-15",
+          "is_recurring": false,
+          "recurrence_pattern": null,
+          "created_at": "2026-01-02T10:30:00Z"
+        }
+      }
+    },
+    "TodoUpdatedEvent": {
+      "type": "object",
+      "description": "Published when a todo is updated (PATCH /api/v5/todos/{id})",
+      "required": ["event_type", "todo_id", "user_id", "timestamp", "payload"],
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "const": "TodoUpdated"
+        },
+        "todo_id": {
+          "type": "integer",
+          "description": "ID of the updated todo"
+        },
+        "user_id": {
+          "type": "integer",
+          "description": "ID of the user who updated the todo"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Event creation timestamp (ISO 8601)"
+        },
+        "payload": {
+          "type": "object",
+          "description": "Before and after state for changed fields",
+          "required": ["before", "after"],
+          "properties": {
+            "before": {
+              "type": "object",
+              "description": "State before update (only changed fields)",
+              "example": {
+                "title": "Old title",
+                "priority": "Medium"
+              }
+            },
+            "after": {
+              "type": "object",
+              "description": "State after update (only changed fields)",
+              "example": {
+                "title": "New title",
+                "priority": "High"
+              }
+            }
+          }
+        }
+      },
+      "example": {
+        "event_type": "TodoUpdated",
+        "todo_id": 42,
+        "user_id": 1,
+        "timestamp": "2026-01-02T11:15:30Z",
+        "payload": {
+          "before": {
+            "title": "Complete Phase 5 implementation",
+            "priority": "Medium"
+          },
+          "after": {
+            "title": "Complete Phase 5 implementation (URGENT)",
+            "priority": "High"
+          }
+        }
+      }
+    },
+    "TodoCompletedEvent": {
+      "type": "object",
+      "description": "Published when a todo is marked as completed (PATCH /api/v5/todos/{id}/complete)",
+      "required": ["event_type", "todo_id", "user_id", "timestamp", "payload"],
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "const": "TodoCompleted"
+        },
+        "todo_id": {
+          "type": "integer",
+          "description": "ID of the completed todo"
+        },
+        "user_id": {
+          "type": "integer",
+          "description": "ID of the user who completed the todo"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Event creation timestamp (ISO 8601)"
+        },
+        "payload": {
+          "type": "object",
+          "description": "Full todo state at completion",
+          "required": ["todo_id", "title", "completed_at"],
+          "properties": {
+            "todo_id": {
+              "type": "integer",
+              "example": 42
+            },
+            "title": {
+              "type": "string",
+              "example": "Complete Phase 5 implementation"
+            },
+            "priority": {
+              "type": "string",
+              "enum": ["High", "Medium", "Low"],
+              "example": "High"
+            },
+            "tags": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "example": ["#work", "#urgent"]
+            },
+            "was_recurring": {
+              "type": "boolean",
+              "description": "Whether todo was recurring before completion",
+              "example": true
+            },
+            "next_occurrence_id": {
+              "type": "integer",
+              "nullable": true,
+              "description": "ID of auto-generated next occurrence (if recurring)",
+              "example": 43
+            },
+            "completed_at": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-01-02T12:00:00Z"
+            }
+          }
+        }
+      },
+      "example": {
+        "event_type": "TodoCompleted",
+        "todo_id": 42,
+        "user_id": 1,
+        "timestamp": "2026-01-02T12:00:05Z",
+        "payload": {
+          "todo_id": 42,
+          "title": "Daily standup",
+          "priority": "Medium",
+          "tags": ["#team"],
+          "was_recurring": true,
+          "next_occurrence_id": 43,
+          "completed_at": "2026-01-02T12:00:00Z"
+        }
+      }
+    },
+    "TodoDeletedEvent": {
+      "type": "object",
+      "description": "Published when a todo is deleted (DELETE /api/v5/todos/{id})",
+      "required": ["event_type", "todo_id", "user_id", "timestamp", "payload"],
+      "properties": {
+        "event_type": {
+          "type": "string",
+          "const": "TodoDeleted"
+        },
+        "todo_id": {
+          "type": "integer",
+          "description": "ID of the deleted todo"
+        },
+        "user_id": {
+          "type": "integer",
+          "description": "ID of the user who deleted the todo"
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Event creation timestamp (ISO 8601)"
+        },
+        "payload": {
+          "type": "object",
+          "description": "Minimal info about deleted todo",
+          "required": ["todo_id", "title"],
+          "properties": {
+            "todo_id": {
+              "type": "integer",
+              "example": 42
+            },
+            "title": {
+              "type": "string",
+              "example": "Complete Phase 5 implementation"
+            },
+            "was_recurring": {
+              "type": "boolean",
+              "description": "Whether deleted todo was recurring",
+              "example": false
+            },
+            "cancelled_future_occurrences": {
+              "type": "integer",
+              "description": "Number of future occurrences cancelled (if recurring)",
+              "example": 0
+            },
+            "deleted_at": {
+              "type": "string",
+              "format": "date-time",
+              "example": "2026-01-02T13:00:00Z"
+            }
+          }
+        }
+      },
+      "example": {
+        "event_type": "TodoDeleted",
+        "todo_id": 42,
+        "user_id": 1,
+        "timestamp": "2026-01-02T13:00:05Z",
+        "payload": {
+          "todo_id": 42,
+          "title": "Complete Phase 5 implementation",
+          "was_recurring": false,
+          "cancelled_future_occurrences": 0,
+          "deleted_at": "2026-01-02T13:00:00Z"
+        }
+      }
+    }
+  },
+  "oneOf": [
+    { "$ref": "#/definitions/TodoCreatedEvent" },
+    { "$ref": "#/definitions/TodoUpdatedEvent" },
+    { "$ref": "#/definitions/TodoCompletedEvent" },
+    { "$ref": "#/definitions/TodoDeletedEvent" }
+  ],
+  "examples": [
+    {
+      "description": "TodoCreated event wrapped in CloudEvent",
+      "value": {
+        "specversion": "1.0",
+        "type": "com.todos.todo.created",
+        "source": "todos-backend",
+        "id": "a1b2c3d4-e5f6-7890-abcd-ef1234567890",
+        "time": "2026-01-02T10:30:05Z",
+        "datacontenttype": "application/json",
+        "data": {
+          "event_type": "TodoCreated",
+          "todo_id": 42,
+          "user_id": 1,
+          "timestamp": "2026-01-02T10:30:05Z",
+          "payload": {
+            "todo_id": 42,
+            "title": "Complete Phase 5 implementation",
+            "status": "pending",
+            "priority": "High",
+            "tags": ["#work", "#urgent"],
+            "due_date": "2026-01-15",
+            "is_recurring": false,
+            "recurrence_pattern": null,
+            "created_at": "2026-01-02T10:30:00Z"
+          }
+        }
+      }
+    }
+  ],
+  "metadata": {
+    "kafka_topic": "todos.events",
+    "pubsub_component": "todo-events-pubsub",
+    "delivery_guarantee": "at-least-once",
+    "event_retention": "7 days",
+    "consumers": [
+      {
+        "app_id": "event-processor",
+        "handler": "/events",
+        "subscription": "/dapr/subscribe"
+      }
+    ]
+  }
+}

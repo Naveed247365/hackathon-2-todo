@@ -1,147 +1,208 @@
 <!--
 Sync Impact Report - Constitution Update
 
-Version Change: 1.0.0 → 1.1.0
-Rationale: Added Principle IX (Phase-Based Folder Organization) to enforce phase separation
+Version Change: 1.1.0 → 2.0.0
+Rationale: MAJOR version bump - Complete refocus from general spec-driven development to UI-only
+futuristic 3D interface upgrade. Removed backend/API principles, added performance-first UI principles.
 
-Modified Principles: None
+Modified Principles:
+  - Principle I: Spec-First Development → UI-Only Development (scope narrowed to UI changes only)
+  - Principle II: Phase Discipline → remains but reinterpreted for UI-only work
+  - Principle V: Stateless Services → REMOVED (backend changes out of scope)
+  - Principle VI: MCP Tool Constraint → REMOVED (not applicable to UI-only work)
+  - Principle VII: Cloud-Native Readiness → REMOVED (deployment not in scope)
+
 Added Sections:
-  - Principle IX: Phase-Based Folder Organization (NON-NEGOTIABLE)
-    - All implementation artifacts must be in phase-N/ folders
-    - Specs remain in specs/ directory
-    - Shared infrastructure stays at repository root
+  - Principle X: Performance-First UI (60fps target, budget enforcement)
+  - Principle XI: Progressive Enhancement (fallback to 2D if WebGL unavailable)
+  - Principle XII: Accessibility Preservation (WCAG 2.1 AA compliance maintained)
+  - Principle XIII: Subtle 3D Philosophy (enhancement over spectacle)
+  - Principle XIV: Responsive Design (mobile + desktop parity)
+  - Principle XV: Technology Stack Constraints (Next.js, Tailwind, Framer Motion, Three.js)
 
-Removed Sections: None
+Removed Sections:
+  - Principle V: Stateless Services, Database as Source of Truth (backend out of scope)
+  - Principle VI: MCP Tool Constraint (not applicable)
+  - Principle VII: Cloud-Native Readiness (deployment out of scope)
 
 Templates Status:
-  ✅ spec-template.md - No changes needed
-  ✅ plan-template.md - No changes needed
-  ✅ tasks-template.md - File paths should reference phase-N/ directory
-  ✅ All templates - Phase folder structure now enforced
+  ⚠ spec-template.md - Update to reflect UI-only scope constraints
+  ⚠ plan-template.md - Add performance budgets, accessibility checks, 3D complexity gates
+  ⚠ tasks-template.md - Add UI-specific task categories (animations, 3D components, responsive)
+  ⚠ All templates - Constitution Check gates must reflect new UI principles
 
 Follow-up Actions:
-  ✅ Phase 1 files moved to phase-1/ directory
-  - Future phases must follow phase-N/ structure
-  - Update project README to reflect folder organization
+  - Update spec-template.md to include accessibility scenarios
+  - Update plan-template.md with performance budget section
+  - Add UI-specific checklists (accessibility, performance, responsive)
+  - Review existing Phase 2 (web UI) for alignment with new principles
+  - Future UI phases must follow futuristic 3D design principles
 
-Previous Sync Impact Report (v1.0.0):
-Version Change: [none] → 1.0.0
-Rationale: Initial constitution for Hackathon 2: Spec-Driven Todo Application
-Added: 8 core principles, development workflow, quality standards, governance
+Previous Sync Impact Report (v1.1.0):
+Version Change: 1.0.0 → 1.1.0
+Rationale: Added Principle IX (Phase-Based Folder Organization) to enforce phase separation
+Modified Principles: None
+Added Sections: Principle IX
 -->
 
-# Hackathon 2: Spec-Driven Todo Application Constitution
+# Hackathon 2: Futuristic 3D Todo UI Constitution
 
 ## Core Principles
 
-### I. Spec-First Development (NON-NEGOTIABLE)
+### I. UI-Only Development (NON-NEGOTIABLE)
 
-All code MUST be preceded by a complete specification. No implementation work may begin without:
-- Approved feature specification in `specs/<feature>/spec.md`
-- Complete implementation plan in `specs/<feature>/plan.md`
-- Task breakdown in `specs/<feature>/tasks.md`
+All work MUST be limited to user interface changes. Backend, API, and database logic are FROZEN:
+- No changes to API endpoints, request/response formats, or backend logic
+- No changes to database schema, queries, or data models
+- No changes to business logic or validation rules
+- UI layer MAY call existing APIs but MUST NOT modify them
+- All improvements MUST be purely presentational and interaction-focused
 
-**Rationale**: Spec-first development ensures alignment between business requirements and technical implementation before resources are committed. Bugs are treated as spec violations—either the code deviates from the spec, or the spec was incomplete. This eliminates the "we forgot to consider X" category of defects.
+**Rationale**: This constitution governs a UI upgrade phase only. Backend stability is a hard constraint. Mixing UI and backend changes increases risk, complexity, and testing burden. UI-only scope enables rapid iteration on visual design without regression risk to core functionality.
 
-### II. Phase Discipline (NON-NEGOTIABLE)
+### II. Performance-First UI (NON-NEGOTIABLE)
 
-Development MUST proceed through distinct phases with zero overlap:
-1. **Specification Phase**: Define requirements, user stories, acceptance criteria
-2. **Planning Phase**: Architecture, design decisions, technical approach
-3. **Task Definition Phase**: Breakdown into testable, trackable work items
-4. **Implementation Phase**: Execute tasks in dependency order
-5. **Validation Phase**: Verify all acceptance criteria met
+Visual enhancements MUST NOT compromise performance. All UI changes MUST meet strict performance budgets:
+- **Desktop Target**: 60fps (16.67ms per frame) during all interactions
+- **Mobile Target**: 60fps on mid-range devices (iPhone 12, Galaxy S21 equivalent)
+- **Initial Load**: First Contentful Paint < 1.5s, Time to Interactive < 3s
+- **Animation Budget**: Max 50ms for layout animations, prefer transform/opacity
+- **3D Budget**: Max 500 draw calls, < 500k triangles, < 200MB texture memory per scene
+- **JavaScript Bundle**: Main bundle < 200KB gzipped, lazy load 3D dependencies
 
-Each phase MUST have explicit exit criteria. No phase may begin until the prior phase is complete and approved.
+Performance budgets MUST be enforced via automated monitoring. Features that violate budgets MUST be optimized or removed.
 
-**Rationale**: Phase discipline prevents premature optimization, scope creep, and rework. Clear boundaries ensure that design decisions are made with full context, and implementation follows a validated plan.
+**Rationale**: Futuristic UI is worthless if it's janky or slow. Users abandon slow apps. 60fps is the baseline for premium feel. Performance budgets prevent feature creep from degrading experience. Mobile devices have 1/10th the GPU power of desktop—design for constraints first.
 
-### III. Clear Exit Criteria (NON-NEGOTIABLE)
+### III. Progressive Enhancement (NON-NEGOTIABLE)
 
-Every phase, task, and deliverable MUST define measurable completion criteria before work begins:
-- Specifications: All user stories have acceptance scenarios; all edge cases documented; all "NEEDS CLARIFICATION" resolved
-- Plans: All architectural decisions documented; all dependencies identified; Constitution Check passed
-- Tasks: Success criteria stated; file paths specified; dependencies explicit
-- Implementation: All tests pass; all acceptance criteria met; no TODOs in production code
+3D effects MUST gracefully degrade when WebGL is unavailable or performance is insufficient:
+- Detect WebGL support on load; fallback to 2D CSS if unsupported
+- Monitor FPS in real-time; reduce quality or disable 3D if sustained < 30fps
+- Provide user control to disable 3D effects ("Performance Mode" toggle)
+- Core functionality MUST work without 3D (3D is enhancement, not requirement)
+- Fallback UI MUST be visually cohesive (not broken/ugly without 3D)
 
-**Rationale**: Ambiguous completion criteria lead to gold-plating, missed requirements, and unclear progress. Explicit exit criteria enable confident handoffs and prevent endless iteration.
+Progressive enhancement applies to animations, effects, and interactions—not just 3D scenes.
 
-### IV. Domain Consistency (NON-NEGOTIABLE)
+**Rationale**: Not all users have high-end GPUs. Battery-conscious users disable animations. Older browsers lack WebGL2 support. Accessibility settings (prefers-reduced-motion) must be respected. The app must be usable on all devices, not just the developer's MacBook Pro.
 
-Todo domain rules MUST remain consistent across all phases and artifacts:
-- Todo entity structure defined in spec MUST match implementation
-- Todo state transitions (pending → completed → archived) MUST be enforced uniformly
-- Todo validation rules (title required, max length, etc.) MUST be consistent in API, database, and UI
-- Domain terminology MUST be used consistently in specs, code, tests, and documentation
+### IV. Accessibility Preservation (NON-NEGOTIABLE)
 
-**Rationale**: Domain inconsistency is a primary source of bugs and confusion. A single source of truth for domain rules—established in the spec and enforced in all artifacts—eliminates an entire class of defects.
+Visual upgrades MUST NOT break accessibility. WCAG 2.1 Level AA compliance is MANDATORY:
+- All interactive elements MUST be keyboard navigable (no mouse-only 3D interactions)
+- All text MUST meet 4.5:1 contrast ratio (watch glassmorphism, gradients)
+- All animations MUST respect `prefers-reduced-motion` media query
+- Screen readers MUST announce state changes (todo completion, deletion, errors)
+- Focus indicators MUST be visible on all interactive elements
+- 3D elements MUST have semantic HTML equivalents for assistive tech
 
-### V. Stateless Services, Database as Source of Truth
+Accessibility is tested with keyboard-only navigation, screen readers (NVDA/JAWS), and automated tools (axe-core).
 
-Application services MUST be stateless. All persistent state MUST reside in the database:
-- No in-memory caching of domain entities (session state, request-scoped caching acceptable)
-- All CRUD operations MUST interact with the database
-- Services MUST be horizontally scalable without coordination
-- Database schema MUST be versioned and migration-managed
+**Rationale**: Flashy UI that excludes disabled users is unethical and illegal. WCAG compliance is non-negotiable. Reduced motion preferences are set by users with vestibular disorders—ignoring them causes nausea. Keyboard navigation is essential for power users and accessibility.
 
-**Rationale**: Stateless services enable horizontal scaling, simplify deployment, and eliminate session affinity requirements. Database-as-source-of-truth ensures consistency and enables Kubernetes-native patterns.
+### V. Subtle 3D Philosophy (NON-NEGOTIABLE)
 
-### VI. MCP Tool Constraint (NON-NEGOTIABLE)
+3D effects MUST enhance usability, not distract from it. Spectacle is REJECTED in favor of purposeful depth:
+- 3D depth for hierarchy (cards float above background, modals above cards)
+- Parallax for spatial context (background layers move slower than foreground)
+- Smooth transitions for state changes (cards flip on completion, slide on delete)
+- Hover effects for affordance (cards lift slightly on hover, buttons depress on click)
+- AVOID: Spinning logos, unnecessary rotations, gratuitous particle effects, VR-style scenes
 
-AI agents MAY ONLY interact with the system through defined Model Context Protocol (MCP) tools:
-- All database operations via SQLite MCP tools
-- All file operations via Filesystem MCP tools
-- All Git operations via Git MCP tools
-- No direct shell commands for CRUD operations
-- No agent-generated SQL outside MCP tools
+3D should feel like natural depth, not a tech demo. If the user notices the 3D instead of the task, it's too much.
 
-**Rationale**: MCP tools enforce safe, auditable, and reversible operations. Direct shell access or ad-hoc SQL invites injection vulnerabilities, untracked changes, and context drift. Tool constraints create a security boundary and enable traceability.
+**Rationale**: Heavy 3D scenes tank performance and distract users. The goal is a futuristic feel, not a video game. Subtle depth cues (shadows, parallax, layering) create premium feel without cognitive overload. Users should feel "wow, this is polished" not "what's happening on my screen?"
 
-### VII. Cloud-Native Readiness (NON-NEGOTIABLE)
+### VI. Responsive Design Parity (NON-NEGOTIABLE)
 
-All code and infrastructure MUST maintain compatibility with Kubernetes deployment:
-- Dockerfiles MUST be present and functional
-- Environment variables for all configuration (no hardcoded values)
-- Healthcheck endpoints required for all services
-- Logs to stdout/stderr (no file logging)
-- Graceful shutdown handling (SIGTERM)
-- Resource limits documented (CPU, memory)
+Mobile and desktop experiences MUST have feature parity and visual consistency:
+- All 3D effects MUST work on mobile (with appropriate quality reduction)
+- Touch gestures MUST have mouse/keyboard equivalents (swipe = arrow keys)
+- Layouts MUST adapt fluidly from 320px to 4K displays
+- Performance budgets apply to BOTH desktop and mobile (test on real devices)
+- Mobile-first design: if a feature can't work on mobile, it's cut entirely
 
-**Rationale**: Kubernetes compatibility is non-negotiable for production deployment. Designing for cloud-native from the start avoids costly refactoring later. Healthchecks, log streaming, and graceful shutdown are table stakes for reliability.
+Responsive design is NOT just layout—it's interaction patterns, performance, and feature availability.
 
-### VIII. Process Over Features
+**Rationale**: Mobile users are 60%+ of web traffic. Designing desktop-only 3D UI is obsolete. Touch and mouse have different affordances—design for both. "Mobile version in 2D, desktop in 3D" creates inconsistent experience and doubles maintenance cost.
 
-For hackathon judging, demonstration of rigorous process is prioritized over feature completeness:
-- Comprehensive specs count more than numerous features
-- Complete, passing tests count more than untested features
-- Clear architecture documentation counts more than clever code
-- Traceable decision-making (ADRs, PHRs) counts more than volume of output
+### VII. Technology Stack Constraints (NON-NEGOTIABLE)
 
-**Rationale**: Hackathon judging criteria explicitly reward disciplined process. Building one fully-specified, tested, documented feature demonstrates more engineering maturity than ten half-baked features.
+UI implementation MUST use the following approved stack. Deviations require explicit justification:
+- **Framework**: Next.js 14+ (App Router, React Server Components where applicable)
+- **Styling**: Tailwind CSS 3+ with CSS variables for theming
+- **Animations**: Framer Motion 11+ for layout animations and gestures
+- **3D Library**: Three.js (via React Three Fiber) ONLY where it adds clear value
+- **Icons**: Lucide React or Heroicons (SVG, tree-shakeable)
+- **Fonts**: Variable fonts (Inter, Geist, or system fonts for performance)
 
-### IX. Phase-Based Folder Organization (NON-NEGOTIABLE)
+Additional libraries require performance/bundle size justification in implementation plan.
 
-All implementation artifacts MUST be organized into phase-specific folders at the repository root:
-- Phase 1 implementation files MUST reside in `phase-1/` directory
-- Phase 2 implementation files MUST reside in `phase-2/` directory
-- Phase N implementation files MUST reside in `phase-N/` directory
-- Each phase folder contains: source code, README, configuration files, Dockerfile (if applicable)
+**Rationale**: Consistency enables maintainability. Tailwind + CSS variables enable theming without runtime cost. Framer Motion handles complex animations declaratively. Three.js is industry standard for WebGL. Limiting libraries prevents bundle bloat and fragmentation.
+
+### VIII. Domain Consistency (NON-NEGOTIABLE)
+
+Todo domain rules MUST remain consistent with existing backend implementation:
+- Todo entity structure (id, title, description, status, createdAt, updatedAt) is FROZEN
+- Todo state transitions (pending → completed → archived) MUST match API behavior
+- Validation rules (title required, max lengths) MUST match backend constraints
+- Domain terminology MUST align with API contracts (use "todo" not "task", "status" not "state")
+
+UI layer displays and manipulates todos but MUST NOT redefine domain rules.
+
+**Rationale**: UI is a presentation layer for backend-defined domain. Inventing UI-only validation rules or state transitions creates inconsistency bugs. Domain logic lives in backend; UI reflects it faithfully.
+
+### IX. Phase Discipline (NON-NEGOTIABLE)
+
+UI development MUST proceed through distinct phases with zero overlap:
+1. **Specification Phase**: Define visual design, interactions, animations, accessibility requirements
+2. **Planning Phase**: Component architecture, performance budgets, 3D complexity analysis, technology choices
+3. **Task Definition Phase**: Breakdown into testable UI tasks (components, animations, responsive layouts)
+4. **Implementation Phase**: Build components in dependency order (design system → pages → 3D enhancements)
+5. **Validation Phase**: Verify performance budgets, accessibility, responsive behavior, visual polish
+
+Each phase MUST have explicit exit criteria. No phase may begin until the prior phase is complete.
+
+**Rationale**: UI work is prone to scope creep ("just one more animation"). Phase discipline prevents endless tweaking. Clear exit criteria ensure performance budgets and accessibility are validated, not assumed.
+
+### X. Clear Exit Criteria (NON-NEGOTIABLE)
+
+Every UI phase, task, and deliverable MUST define measurable completion criteria:
+- Specifications: All screens/components mocked up; all animations described; accessibility scenarios defined
+- Plans: Component hierarchy documented; performance budgets set; 3D complexity analyzed; Constitution Check passed
+- Tasks: Visual acceptance criteria stated; file paths specified; dependencies explicit
+- Implementation: All visual specs met; performance budgets passed; accessibility tests passed; no visual regressions
+
+Exit criteria for UI work include visual QA (screenshot comparison), performance profiling, and accessibility audits.
+
+**Rationale**: "Looks good" is not exit criteria. Measurable criteria (FPS > 60, contrast ratio > 4.5:1, bundle < 200KB) prevent endless polish cycles and ensure quality gates.
+
+### XI. Phase-Based Folder Organization (NON-NEGOTIABLE)
+
+All UI implementation artifacts MUST be organized into phase-specific folders:
+- Phase 3 UI upgrade files MUST reside in `phase-3/` directory (or appropriate phase number)
+- Each phase folder contains: Next.js app, components, styles, public assets, README, Dockerfile
 - Specifications remain in `specs/` directory (not moved to phase folders)
 - Shared infrastructure (`.specify/`, `history/`) remains at repository root
 
-**Folder Structure Example**:
+**Folder Structure Example for UI Phase**:
 ```
 repository-root/
-├── phase-1/              # Phase 1 implementation
-│   ├── todo.py
-│   └── README.md
-├── phase-2/              # Phase 2 implementation (future)
-│   ├── src/
-│   ├── tests/
+├── phase-3/              # Futuristic 3D UI implementation
+│   ├── app/              # Next.js App Router pages
+│   ├── components/       # React components
+│   │   ├── ui/           # Design system primitives
+│   │   ├── todo/         # Todo-specific components
+│   │   └── 3d/           # Three.js/R3F components
+│   ├── styles/           # Global CSS, Tailwind config
+│   ├── public/           # Static assets (textures, models, fonts)
+│   ├── lib/              # Utils, hooks, API client
 │   ├── Dockerfile
+│   ├── package.json
 │   └── README.md
 ├── specs/                # All specifications (shared)
-│   └── 001-console-based-todo-app/
+│   └── 003-futuristic-ui/
 │       ├── spec.md
 │       ├── plan.md
 │       └── tasks.md
@@ -149,111 +210,129 @@ repository-root/
 └── history/              # PHRs and ADRs (shared)
 ```
 
-**Rationale**: Phase-based folder organization provides clear separation of evolutionary stages, enables phase comparisons, simplifies rollback to previous phases, and demonstrates iterative development for hackathon judging. Each phase is self-contained and independently runnable.
+**Rationale**: Phase isolation enables side-by-side comparison (Phase 2 basic UI vs Phase 3 futuristic UI). Each phase is independently deployable. Clear separation demonstrates evolutionary development for hackathon judging.
+
+### XII. Process Over Features
+
+For hackathon judging, demonstration of rigorous UI process is prioritized over visual complexity:
+- Comprehensive design specs (with mockups, interaction flows) count more than numerous screens
+- Performance profiling and optimization count more than heavy 3D scenes
+- Accessibility audits and compliance count more than flashy animations
+- Traceable design decisions (ADRs for major UI choices) count more than volume of components
+
+**Rationale**: Hackathon judging rewards disciplined process. One fully-specified, accessible, performant screen demonstrates more engineering maturity than ten janky, inaccessible screens.
 
 ## Development Workflow
 
-### Phase 0: Feature Request
-- User provides natural language description of desired functionality
-- Run `/sp.specify` to generate initial specification draft
-- Clarify ambiguities using AskUserQuestion tool
-- Iterate until spec is complete and approved
+### Phase 0: UI Feature Request
+- User provides description of desired UI enhancement (e.g., "futuristic 3D todo cards")
+- Run `/sp.specify` to generate UI specification draft
+- Include visual mockups, interaction descriptions, animation sequences
+- Clarify design ambiguities (color schemes, spacing, 3D complexity)
+- Iterate until UI spec is complete and approved
 
-**Exit Criteria**: Spec file exists in `specs/<feature>/spec.md`; all user stories have acceptance scenarios; all "NEEDS CLARIFICATION" resolved; user approval obtained.
+**Exit Criteria**: Spec file exists in `specs/<feature>/spec.md`; all screens/components described; all animations specified; all "NEEDS CLARIFICATION" resolved; user approval obtained.
 
-### Phase 1: Specification Refinement
-- Review generated spec for completeness
-- Identify missing edge cases, functional requirements, or success criteria
-- Run `/sp.clarify` if needed to address underspecified areas
-- Update spec based on clarification responses
+### Phase 1: UI Specification Refinement
+- Review generated UI spec for completeness
+- Identify missing responsive behaviors, accessibility requirements, or performance constraints
+- Run `/sp.clarify` if needed to address underspecified UI areas
+- Add performance budgets for each component/screen
 
-**Exit Criteria**: All functional requirements numbered and testable; all edge cases documented; all entities defined; success criteria measurable; no ambiguous language.
+**Exit Criteria**: All UI components numbered and described; all animations detailed; all accessibility scenarios documented; performance budgets set; no ambiguous visual language.
 
-### Phase 2: Implementation Planning
-- Run `/sp.plan` to generate architecture and design artifacts
-- Research technical approach (language, framework, dependencies)
-- Document key decisions with rationale
-- Pass Constitution Check (validate against all 8 core principles)
-- Identify ADR-worthy decisions and run `/sp.adr` with user consent
+### Phase 2: UI Implementation Planning
+- Run `/sp.plan` to generate component architecture and design system
+- Research optimal approaches (CSS Grid vs Flexbox, Three.js vs CSS 3D transforms)
+- Document key UI decisions with rationale (why Framer Motion over CSS transitions)
+- Pass Constitution Check (validate against all 12 UI principles)
+- Identify ADR-worthy decisions (e.g., "Why we chose glassmorphism over neumorphism")
 
-**Exit Criteria**: Plan file exists in `specs/<feature>/plan.md`; all placeholders resolved; technical stack specified; Constitution Check passed; architectural decisions documented; user approval obtained.
+**Exit Criteria**: Plan file exists with component hierarchy, design system tokens, performance budgets, 3D complexity analysis, Constitution Check passed, architectural decisions documented.
 
-### Phase 3: Task Breakdown
-- Run `/sp.tasks` to generate actionable task list
-- Ensure tasks are organized by user story priority
-- Verify each task has file paths, dependencies, and success criteria
-- Confirm foundational tasks block user story work appropriately
+### Phase 3: UI Task Breakdown
+- Run `/sp.tasks` to generate actionable UI task list
+- Organize tasks by dependency (design system → primitives → composites → pages → 3D enhancements)
+- Verify each task has visual acceptance criteria and file paths
+- Confirm foundational tasks (design system, theme setup) block dependent work
 
-**Exit Criteria**: Tasks file exists in `specs/<feature>/tasks.md`; all tasks have clear success criteria; dependencies explicit; file paths specified; no vague or ambiguous tasks.
+**Exit Criteria**: Tasks file exists with clear visual success criteria, dependencies explicit, file paths specified, responsive and accessibility tasks included.
 
-### Phase 4: Implementation
-- Execute tasks in dependency order
-- Mark tasks in-progress using TodoWrite tool before starting
-- Mark tasks completed immediately after finishing
-- Run `/sp.implement` for guided execution (optional)
-- Create commits after each logical task or task group
-- Never mark a task completed if tests fail or errors remain
+### Phase 4: UI Implementation
+- Execute tasks in dependency order (build design system first)
+- Mark tasks in-progress before starting, completed immediately after finishing
+- Create commits after each logical component or feature
+- Test responsiveness on real devices (mobile, tablet, desktop)
+- Profile performance continuously (Stats.js, Chrome DevTools)
+- Never mark task completed if performance budgets fail or accessibility tests fail
 
-**Exit Criteria**: All tasks marked completed; all acceptance criteria from spec met; all tests passing; no TODO comments in production code; code committed to feature branch.
+**Exit Criteria**: All tasks completed; all visual specs met; all performance budgets passed; all accessibility tests passed; code committed to feature branch.
 
-### Phase 5: Validation and Delivery
-- Run full test suite (unit, integration, contract tests if present)
-- Validate against all acceptance scenarios in spec
-- Generate final validation checklist using `/sp.checklist`
-- Create pull request with reference to spec
-- Merge only after all checks pass
+### Phase 5: UI Validation and Delivery
+- Run performance profiling suite (FPS monitoring, bundle size analysis)
+- Validate against all accessibility scenarios (keyboard nav, screen reader, reduced motion)
+- Test responsive behavior across breakpoints (320px to 4K)
+- Generate UI validation checklist using `/sp.checklist`
+- Create pull request with visual regression screenshots
 
-**Exit Criteria**: All tests passing; all acceptance scenarios validated; PR approved and merged; feature deployed or deployable.
+**Exit Criteria**: Performance budgets passed; accessibility audits passed; responsive tests passed; visual QA approved; PR merged.
 
 ## Quality Standards
 
-### Testing Requirements
-- **Unit Tests**: OPTIONAL (only if explicitly requested in spec)
-- **Integration Tests**: OPTIONAL (only if explicitly requested in spec)
-- **Contract Tests**: OPTIONAL (only if explicitly requested in spec)
-- **Acceptance Validation**: MANDATORY for all features (validate against spec scenarios)
-- **Test-First Discipline**: If tests are included, they MUST be written before implementation and MUST fail before code is added
+### UI Testing Requirements
+- **Visual Regression Tests**: MANDATORY (screenshot comparison on key screens)
+- **Performance Tests**: MANDATORY (FPS monitoring, bundle size, load time)
+- **Accessibility Tests**: MANDATORY (axe-core automated + manual keyboard/screen reader)
+- **Responsive Tests**: MANDATORY (320px, 768px, 1024px, 1920px breakpoints)
+- **Unit Tests**: OPTIONAL (for complex UI logic like animation sequencing)
 
-### Documentation Requirements
-- **Specification**: MANDATORY for every feature (`specs/<feature>/spec.md`)
-- **Implementation Plan**: MANDATORY for every feature (`specs/<feature>/plan.md`)
-- **Task List**: MANDATORY for every feature (`specs/<feature>/tasks.md`)
-- **README**: MANDATORY for project-level guidance
-- **API Documentation**: MANDATORY for all public endpoints (in plan or contracts/)
-- **ADRs**: MANDATORY for architecturally significant decisions (with user consent)
+### UI Documentation Requirements
+- **Specification**: MANDATORY for every UI feature (`specs/<feature>/spec.md` with visual mockups)
+- **Implementation Plan**: MANDATORY (`specs/<feature>/plan.md` with component architecture)
+- **Task List**: MANDATORY (`specs/<feature>/tasks.md` with visual acceptance criteria)
+- **Design System Docs**: MANDATORY (document color tokens, spacing scale, typography)
+- **Component Storybook**: RECOMMENDED (isolate and document UI components)
+- **ADRs**: MANDATORY for major UI decisions (technology choices, design philosophy)
 - **PHRs**: MANDATORY for every user request (auto-generated after work completion)
 
-### Observability Requirements
-- All critical operations MUST log at appropriate levels (INFO, WARN, ERROR)
-- All database operations MUST be traceable via logs or query logs
-- All API endpoints MUST log request/response (excluding sensitive data)
-- All errors MUST include context (stack trace, request ID, user ID if applicable)
-- Logs MUST be structured (JSON preferred) for parsing
+### Performance Monitoring Requirements
+- All 3D scenes MUST include Stats.js during development (FPS, MS, MB panels)
+- All pages MUST log Web Vitals (LCP, FID, CLS) to console in dev mode
+- Performance budgets MUST be validated in CI (bundle size, Lighthouse scores)
+- Slow animations (> 50ms) MUST log warnings with component/element identifier
+- Production builds MUST tree-shake dev-only performance monitoring code
+
+### Accessibility Monitoring Requirements
+- All pages MUST pass axe-core automated checks (0 violations)
+- All interactive elements MUST be keyboard-testable (manual validation required)
+- All animations MUST respect `prefers-reduced-motion` (automated test in CI)
+- Color contrast MUST meet WCAG AA (4.5:1 for text, 3:1 for UI components)
+- Screen reader announcements MUST be validated manually (NVDA/VoiceOver)
 
 ## Governance
 
 ### Constitution Supremacy
-This constitution supersedes all other practices, preferences, or conventions. When in conflict, constitution principles take precedence.
+This UI-focused constitution supersedes all other UI practices, design preferences, or visual conventions. When in conflict, constitution principles take precedence.
 
 ### Amendment Process
 - Amendments require explicit user approval
 - Version must be incremented per semantic versioning:
-  - **MAJOR**: Backward-incompatible principle changes
-  - **MINOR**: New principle or section added
+  - **MAJOR**: Backward-incompatible principle changes (e.g., removing accessibility requirement)
+  - **MINOR**: New principle or section added (e.g., adding animation philosophy)
   - **PATCH**: Clarifications, wording fixes, non-semantic refinements
 - All dependent templates MUST be reviewed and updated for consistency
 - Amendment rationale MUST be documented in Sync Impact Report
 - Use `/sp.constitution` to propose and apply amendments
 
 ### Compliance Review
-- All PRs and code reviews MUST verify compliance with this constitution
+- All PRs and code reviews MUST verify compliance with UI constitution
 - Constitution Check gate in plan phase MUST pass before implementation begins
-- Complexity that violates principles MUST be explicitly justified in plan
-- Unjustified violations result in rejected PRs
+- 3D complexity or performance violations MUST be explicitly justified in plan
+- Unjustified violations (accessibility failures, performance budget misses) result in rejected PRs
 
 ### Enforcement
-- Agents MUST follow constitution principles in all generated artifacts
+- Agents MUST follow UI constitution principles in all generated UI artifacts
 - Users MAY override constitution for specific cases with explicit justification
 - Repeated violations indicate constitution is too strict or unclear—consider amendment
 
-**Version**: 1.1.0 | **Ratified**: 2025-12-30 | **Last Amended**: 2025-12-30
+**Version**: 2.0.0 | **Ratified**: 2026-01-03 | **Last Amended**: 2026-01-03
