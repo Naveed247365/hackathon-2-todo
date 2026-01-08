@@ -3,6 +3,7 @@
  * Phase 3: AI-Driven Todo Chatbot
  */
 import { useState, useRef, useEffect, FormEvent } from 'react';
+import { useTheme } from '../contexts/ThemeContext';
 
 const MCP_SERVER_URL = process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:5000';
 
@@ -22,6 +23,7 @@ export default function ChatPanel({ token }: ChatPanelProps) {
   const [loading, setLoading] = useState(false);
   const [isOpen, setIsOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { theme } = useTheme();
 
   // Example commands to display
   const exampleCommands = [
@@ -68,8 +70,8 @@ export default function ChatPanel({ token }: ChatPanelProps) {
       });
 
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to get response');
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.error || `HTTP error! status: ${response.status}`);
       }
 
       const data = await response.json();
@@ -88,7 +90,9 @@ export default function ChatPanel({ token }: ChatPanelProps) {
         role: 'assistant',
         content: err.message.includes('401')
           ? 'Session expired. Please login again.'
-          : 'Unable to connect to AI service. Please try again.',
+          : err.message.includes('Failed to fetch') || err.message.includes('CONNECTION_RESET')
+          ? 'Unable to connect to AI service. Please check if the server is running.'
+          : `Unable to connect to AI service: ${err.message}`,
         timestamp: new Date()
       };
 
@@ -105,143 +109,197 @@ export default function ChatPanel({ token }: ChatPanelProps) {
   return (
     <div style={{
       position: 'fixed',
-      bottom: isOpen ? '0' : '-400px',
-      right: '20px',
-      width: '400px',
-      height: '500px',
-      backgroundColor: 'white',
-      border: '1px solid #ccc',
-      borderRadius: '8px 8px 0 0',
-      boxShadow: '0 -2px 10px rgba(0,0,0,0.1)',
+      bottom: isOpen ? '20px' : '20px',
+      right: isOpen ? '20px' : '20px',
+      width: isOpen ? '400px' : '300px',
+      height: isOpen ? '500px' : '60px',
+      backgroundColor: isOpen ? (theme === 'dark' ? '#1e293b' : 'white') : '#4f46e5',
+      border: `1px solid ${theme === 'dark' ? '#334155' : '#e5e7eb'}`,
+      borderRadius: '12px',
+      boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)',
       display: 'flex',
       flexDirection: 'column',
-      transition: 'bottom 0.3s ease',
+      transition: 'all 0.3s ease',
       zIndex: 1000
     }}>
       {/* Header */}
       <div
         onClick={() => setIsOpen(!isOpen)}
         style={{
-          padding: '15px',
-          backgroundColor: '#007bff',
+          padding: '16px',
+          backgroundColor: '#4f46e5',
           color: 'white',
           cursor: 'pointer',
-          borderRadius: '8px 8px 0 0',
+          borderRadius: '12px 12px 0 0',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center'
         }}
       >
-        <strong>AI Todo Assistant</strong>
-        <span style={{ fontSize: '20px' }}>{isOpen ? '▼' : '▲'}</span>
-      </div>
-
-      {/* Messages Area */}
-      <div style={{
-        flex: 1,
-        overflowY: 'auto',
-        padding: '15px',
-        backgroundColor: '#f9f9f9'
-      }}>
-        {messages.length === 0 ? (
-          <div>
-            <p style={{ marginBottom: '10px', color: '#666' }}>
-              Try these commands:
-            </p>
-            {exampleCommands.map((cmd, idx) => (
-              <div
-                key={idx}
-                onClick={() => handleExampleClick(cmd)}
-                style={{
-                  padding: '8px 12px',
-                  marginBottom: '8px',
-                  backgroundColor: '#e3f2fd',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                  fontSize: '13px',
-                  color: '#1976d2'
-                }}
-              >
-                {cmd}
-              </div>
-            ))}
-          </div>
-        ) : (
-          messages.map((msg, idx) => (
-            <div
-              key={idx}
-              style={{
-                marginBottom: '15px',
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: msg.role === 'user' ? 'flex-end' : 'flex-start'
-              }}
-            >
-              <div style={{
-                maxWidth: '80%',
-                padding: '10px 15px',
-                borderRadius: '8px',
-                backgroundColor: msg.role === 'user' ? '#007bff' : '#e9ecef',
-                color: msg.role === 'user' ? 'white' : '#333',
-                fontSize: '14px',
-                whiteSpace: 'pre-wrap',
-                wordBreak: 'break-word'
-              }}>
-                {msg.content}
-              </div>
-              <div style={{
-                fontSize: '11px',
-                color: '#999',
-                marginTop: '4px',
-                paddingLeft: msg.role === 'user' ? '0' : '15px',
-                paddingRight: msg.role === 'user' ? '15px' : '0'
-              }}>
-                {msg.timestamp.toLocaleTimeString()}
-              </div>
-            </div>
-          ))
-        )}
-        <div ref={messagesEndRef} />
-      </div>
-
-      {/* Input Area */}
-      <form onSubmit={sendMessage} style={{
-        padding: '15px',
-        borderTop: '1px solid #ddd',
-        backgroundColor: 'white'
-      }}>
-        <div style={{ display: 'flex', gap: '10px' }}>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a command..."
-            disabled={loading}
-            style={{
-              flex: 1,
-              padding: '10px',
-              fontSize: '14px',
-              border: '1px solid #ddd',
-              borderRadius: '4px'
-            }}
-          />
-          <button
-            type="submit"
-            disabled={loading || !input.trim()}
-            style={{
-              padding: '10px 20px',
-              backgroundColor: loading ? '#ccc' : '#007bff',
-              color: 'white',
-              border: 'none',
-              cursor: loading ? 'not-allowed' : 'pointer',
-              borderRadius: '4px',
-              fontSize: '14px'
-            }}
-          >
-            {loading ? '...' : 'Send'}
-          </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <span style={{ fontSize: '20px' }}>🤖</span>
+          <strong>AI Todo Assistant</strong>
         </div>
-      </form>
+        <span style={{ fontSize: '20px' }}>{isOpen ? '−' : '+'}</span>
+      </div>
+
+      {/* Messages Area - only visible when open */}
+      {isOpen && (
+        <>
+          <div style={{
+            flex: 1,
+            overflowY: 'auto',
+            padding: '20px',
+            backgroundColor: theme === 'dark' ? '#0f172a' : '#f9fafb',
+            borderBottom: `1px solid ${theme === 'dark' ? '#334155' : '#e5e7eb'}`
+          }}>
+            {messages.length === 0 ? (
+              <div>
+                <p style={{
+                  marginBottom: '16px',
+                  color: theme === 'dark' ? '#94a3b8' : '#6b7280',
+                  textAlign: 'center',
+                  fontWeight: '500'
+                }}>
+                  How can I help you today? Try these commands:
+                </p>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '12px' }}>
+                  {exampleCommands.map((cmd, idx) => (
+                    <div
+                      key={idx}
+                      onClick={() => handleExampleClick(cmd)}
+                      style={{
+                        padding: '12px 16px',
+                        backgroundColor: theme === 'dark' ? '#334155' : '#e0e7ff',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        color: theme === 'dark' ? '#93c5fd' : '#4f46e5',
+                        fontWeight: '500',
+                        transition: 'all 0.2s',
+                        border: `1px solid ${theme === 'dark' ? '#475569' : '#c7d2fe'}`
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.transform = 'translateY(-2px)';
+                        e.currentTarget.style.boxShadow = `0 4px 6px -1px ${theme === 'dark' ? 'rgba(56, 189, 248, 0.1)' : 'rgba(79, 70, 229, 0.1)'}`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.transform = 'translateY(0)';
+                        e.currentTarget.style.boxShadow = 'none';
+                      }}
+                    >
+                      {cmd}
+                    </div>
+                  ))}
+                </div>
+                <div style={{
+                  marginTop: '24px',
+                  padding: '16px',
+                  backgroundColor: theme === 'dark' ? '#713f12' : '#fef3c7',
+                  borderRadius: '8px',
+                  border: `1px solid ${theme === 'dark' ? '#92400e' : '#fbbf24'}`
+                }}>
+                  <p style={{ margin: 0, fontSize: '14px', color: theme === 'dark' ? '#fed7aa' : '#92400e' }}>
+                    <strong>💡 Tip:</strong> You can say things like "add a task", "show my pending tasks", "mark task as done", etc.
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                {messages.map((msg, idx) => (
+                  <div
+                    key={idx}
+                    style={{
+                      display: 'flex',
+                      justifyContent: msg.role === 'user' ? 'flex-end' : 'flex-start',
+                    }}
+                  >
+                    <div style={{
+                      maxWidth: '85%',
+                      padding: '14px 18px',
+                      borderRadius: '18px',
+                      backgroundColor: msg.role === 'user'
+                        ? (theme === 'dark' ? '#4f46e5' : '#4f46e5')
+                        : (theme === 'dark' ? '#334155' : '#e5e7eb'),
+                      color: msg.role === 'user'
+                        ? 'white'
+                        : (theme === 'dark' ? '#e2e8f0' : '#374151'),
+                      fontSize: '15px',
+                      whiteSpace: 'pre-wrap',
+                      wordBreak: 'break-word',
+                      boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)'
+                    }}>
+                      {msg.content}
+                      <div style={{
+                        fontSize: '11px',
+                        color: msg.role === 'user'
+                          ? (theme === 'dark' ? '#93c5fd' : '#bfdbfe')
+                          : (theme === 'dark' ? '#94a3b8' : '#6b7280'),
+                        marginTop: '6px',
+                        textAlign: 'right'
+                      }}>
+                        {msg.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <div ref={messagesEndRef} />
+              </div>
+            )}
+          </div>
+
+          {/* Input Area */}
+          <form onSubmit={sendMessage} style={{
+            padding: '16px',
+            backgroundColor: theme === 'dark' ? '#0f172a' : 'white',
+            borderTop: `1px solid ${theme === 'dark' ? '#334155' : '#e5e7eb'}`
+          }}>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                placeholder="Type a command..."
+                disabled={loading}
+                style={{
+                  flex: 1,
+                  padding: '12px 16px',
+                  fontSize: '15px',
+                  border: `2px solid ${theme === 'dark' ? '#334155' : '#e5e7eb'}`,
+                  borderRadius: '24px',
+                  outline: 'none',
+                  transition: 'border-color 0.2s',
+                  backgroundColor: theme === 'dark' ? '#1e293b' : 'white',
+                  color: theme === 'dark' ? '#f1f5f9' : '#1e2937'
+                }}
+                onFocus={(e) => e.currentTarget.style.borderColor = '#4f46e5'}
+                onBlur={(e) => e.currentTarget.style.borderColor = theme === 'dark' ? '#334155' : '#e5e7eb'}
+              />
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                style={{
+                  padding: '12px 24px',
+                  backgroundColor: loading ? (theme === 'dark' ? '#475569' : '#9ca3af') : '#4f46e5',
+                  color: 'white',
+                  border: 'none',
+                  cursor: loading ? 'not-allowed' : 'pointer',
+                  borderRadius: '24px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  transition: 'all 0.2s'
+                }}
+                onMouseEnter={(e) => !loading && (e.currentTarget.style.backgroundColor = '#4338ca')}
+                onMouseLeave={(e) => e.currentTarget.style.backgroundColor = loading
+                  ? (theme === 'dark' ? '#475569' : '#9ca3af')
+                  : '#4f46e5'}
+              >
+                {loading ? '...' : 'Send'}
+              </button>
+            </div>
+          </form>
+        </>
+      )}
     </div>
   );
 }

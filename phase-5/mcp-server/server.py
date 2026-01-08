@@ -15,6 +15,7 @@ load_dotenv()
 
 # Configuration
 BACKEND_URL = os.getenv("BACKEND_URL", "http://localhost:8000")
+MCP_PORT = int(os.getenv("MCP_PORT", 5000))
 OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
 OPENROUTER_BASE_URL = os.getenv("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1")
 LLM_MODEL = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
@@ -361,35 +362,35 @@ def chat(message: str, jwt_token: str) -> str:
                 # Format friendly response based on tool and result
                 if "error" not in tool_result:
                     if tool_name == "create_todo":
-                        assistant_message += f"Added: {tool_result.get('title')}"
+                        assistant_message += f"Added: {tool_result.get('title', 'Untitled')}\n"
                     elif tool_name == "list_todos":
                         todos = tool_result.get("todos", [])
                         if not todos:
-                            assistant_message += "You have no todos. Would you like to create one?"
+                            assistant_message += "You have no todos. Would you like to create one?\n"
                         else:
-                            assistant_message += "Your todos:\n"
+                            assistant_message += f"You have {len(todos)} todo(s):\n"
                             for todo in todos:
                                 status_icon = "✓" if todo["status"] == "completed" else "○"
                                 assistant_message += f"{status_icon} {todo['id']}. {todo['title']} ({todo['status']})\n"
                     elif tool_name == "complete_todo":
-                        assistant_message += f"Marked '{tool_result.get('title')}' as completed"
+                        assistant_message += f"Marked '{tool_result.get('title', 'a task')}' as completed\n"
                     elif tool_name == "update_todo":
-                        assistant_message += f"Updated: {tool_result.get('title')}"
+                        assistant_message += f"Updated: {tool_result.get('title', 'a task')}\n"
                     elif tool_name == "delete_todo":
-                        assistant_message += "Todo deleted"
+                        assistant_message += "Todo deleted\n"
                 else:
                     # Handle errors
                     error_msg = tool_result.get("error")
                     status_code = tool_result.get("status_code")
 
                     if status_code == 401:
-                        assistant_message += "Please login again - your session has expired."
+                        assistant_message += "Please login again - your session has expired.\n"
                     elif status_code == 403:
-                        assistant_message += "Todo not found or not accessible."
+                        assistant_message += "Todo not found or not accessible.\n"
                     elif status_code == 404:
-                        assistant_message += "Todo not found."
+                        assistant_message += "Todo not found.\n"
                     else:
-                        assistant_message += f"Error: {error_msg}"
+                        assistant_message += f"Error: {error_msg}\n"
 
         # If no tool calls, return the text response
         if not assistant_message and assistant_message_obj.content:
@@ -403,7 +404,13 @@ def chat(message: str, jwt_token: str) -> str:
 
 # Flask app for HTTP endpoints
 app = Flask(__name__)
-CORS(app)  # Enable CORS for frontend
+CORS(app, resources={
+    r"/api/*": {
+        "origins": ["http://localhost:3000", "http://localhost:3001", "http://127.0.0.1:3000", "http://127.0.0.1:3001"],
+        "methods": ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+        "allow_headers": ["Content-Type", "Authorization"]
+    }
+})  # Enable CORS for frontend
 
 
 @app.route('/api/chat', methods=['POST'])

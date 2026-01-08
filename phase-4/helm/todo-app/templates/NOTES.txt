@@ -1,0 +1,41 @@
+Todo App has been deployed successfully!
+
+{{- if .Values.backend.enabled }}
+
+Backend API:
+  - Internal: http://{{ include "todo-app.fullname" . }}-backend-svc:{{ .Values.backend.service.port }}
+  {{- if eq .Values.backend.service.type "NodePort" }}
+  - External: http://$(minikube ip):{{ .Values.backend.service.nodePort }}
+  - Localhost: http://localhost:{{ .Values.backend.service.nodePort }} (with port-forward)
+  {{- end }}
+  - API Docs: http://localhost:{{ .Values.backend.service.nodePort }}/docs
+{{- end }}
+
+{{- if .Values.frontend.enabled }}
+
+Frontend:
+  {{- if eq .Values.frontend.service.type "NodePort" }}
+  - External: http://$(minikube ip):{{ .Values.frontend.service.nodePort }}
+  - Localhost: http://localhost:{{ .Values.frontend.service.nodePort }} (with port-forward)
+  {{- end }}
+{{- end }}
+
+{{- if .Values.mcp.enabled }}
+
+MCP Chat Server:
+  {{- if eq .Values.mcp.service.type "NodePort" }}
+  - External: http://$(minikube ip):{{ .Values.mcp.service.nodePort }}
+  - Localhost: http://localhost:{{ .Values.mcp.service.nodePort }} (with port-forward)
+  {{- end }}
+{{- end }}
+
+To access services on localhost (recommended):
+  kubectl port-forward svc/{{ include "todo-app.fullname" . }}-backend-svc {{ .Values.backend.service.nodePort }}:{{ .Values.backend.service.port }} &
+  kubectl port-forward svc/{{ include "todo-app.fullname" . }}-frontend-svc {{ .Values.frontend.service.nodePort }}:{{ .Values.frontend.service.port }} &
+  kubectl port-forward svc/{{ include "todo-app.fullname" . }}-mcp-svc {{ .Values.mcp.service.nodePort }}:{{ .Values.mcp.service.port }} &
+
+To check pod status:
+  kubectl get pods -l "app.kubernetes.io/instance={{ .Release.Name }}"
+
+To view logs:
+  kubectl logs -l "app.kubernetes.io/instance={{ .Release.Name }}" --all-containers

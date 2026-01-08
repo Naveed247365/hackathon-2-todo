@@ -1,0 +1,105 @@
+# Render.com Blueprint for Todo App
+# Deploy all services with one click using render.yaml
+# Documentation: https://render.com/docs/blueprint-spec
+
+services:
+  # Backend API Service
+  - type: web
+    name: todo-backend
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    rootDir: phase-5/backend
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: todo-db
+          property: connectionString
+      - key: JWT_SECRET_KEY
+        generateValue: true
+      - key: JWT_ALGORITHM
+        value: HS256
+      - key: ACCESS_TOKEN_EXPIRE_HOURS
+        value: 24
+      - key: CORS_ORIGINS
+        value: https://todo-frontend.onrender.com
+    healthCheckPath: /health
+
+  # Frontend Next.js Service
+  - type: web
+    name: todo-frontend
+    env: node
+    region: oregon
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    rootDir: phase-5/frontend
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: todo-backend
+          property: hostport
+      - key: NEXT_PUBLIC_MCP_SERVER_URL
+        fromService:
+          type: web
+          name: todo-mcp
+          property: hostport
+
+  # MCP Chat Server
+  - type: web
+    name: todo-mcp
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python server.py
+    rootDir: phase-5/mcp-server
+    envVars:
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: todo-backend
+          property: hostport
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: LLM_MODEL
+        value: openai/gpt-3.5-turbo
+
+  # Event Processor (Background Worker)
+  - type: worker
+    name: todo-event-processor
+    env: python
+    region: oregon
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port 6000
+    rootDir: phase-5/event-processor
+    envVars:
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: todo-backend
+          property: hostport
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: todo-redis
+          property: connectionString
+
+  # Redis for Pub/Sub
+  - type: redis
+    name: todo-redis
+    region: oregon
+    plan: free
+    maxmemoryPolicy: noeviction
+
+databases:
+  # PostgreSQL Database
+  - name: todo-db
+    region: oregon
+    plan: free
+    databaseName: todos
+    user: todouser

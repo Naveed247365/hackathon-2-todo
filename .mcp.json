@@ -1,0 +1,45 @@
+{
+  "mcpServers": {
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "E:\\hackathon 2\\todos"
+      ]
+    },
+    "git": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "mcp-server-git",
+        "--repository",
+        "E:\\hackathon 2\\todos"
+      ]
+    },
+    "fetch": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "mcp-server-fetch"
+      ]
+    },
+    "sqlite": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "mcp-server-sqlite",
+        "--db-path",
+        "E:\\hackathon 2\\todos\\data.db"
+      ]
+    },
+    "kubernetes": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": [
+        "mcp-server-kubernetes"
+      ]
+    }
+  }
+}

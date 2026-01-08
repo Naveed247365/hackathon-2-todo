@@ -1,0 +1,54 @@
+# Oracle OKE Ingress Configuration
+# Uses OCI Native Ingress Controller
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: todo-app-ingress
+  namespace: todo-app
+  annotations:
+    kubernetes.io/ingress.class: "oci"
+    oci.oraclecloud.com/load-balancer-type: "lb"
+    oci.oraclecloud.com/load-balancer-is-private: "false"
+spec:
+  rules:
+  - host: todo-app.example.com  # Replace with your domain
+    http:
+      paths:
+      - path: /api
+        pathType: Prefix
+        backend:
+          service:
+            name: todo-backend-svc
+            port:
+              number: 8000
+      - path: /mcp
+        pathType: Prefix
+        backend:
+          service:
+            name: todo-mcp-svc
+            port:
+              number: 5000
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: todo-frontend-svc
+            port:
+              number: 3000
+---
+# Alternative: LoadBalancer Services
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-backend-lb
+  namespace: todo-app
+  annotations:
+    oci.oraclecloud.com/load-balancer-type: "lb"
+spec:
+  type: LoadBalancer
+  selector:
+    app: todo-backend
+  ports:
+  - port: 80
+    targetPort: 8000
+    name: http
