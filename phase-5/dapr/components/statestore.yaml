@@ -1,0 +1,30 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: todo-statestore
+  namespace: default
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  - name: redisHost
+    value: redis:6379
+  - name: redisPassword
+    value: ""
+  - name: actorStateStore
+    value: "true"
+---
+# Alternative: PostgreSQL State Store (for production)
+# apiVersion: dapr.io/v1alpha1
+# kind: Component
+# metadata:
+#   name: todo-statestore-pg
+#   namespace: default
+# spec:
+#   type: state.postgresql
+#   version: v1
+#   metadata:
+#   - name: connectionString
+#     secretKeyRef:
+#       name: todo-secrets
+#       key: DATABASE_URL

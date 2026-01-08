@@ -1,0 +1,70 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-event-processor
+  namespace: default
+  labels:
+    app: todo-event-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-event-processor
+  template:
+    metadata:
+      labels:
+        app: todo-event-processor
+      annotations:
+        # Dapr sidecar annotations
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "todo-event-processor"
+        dapr.io/app-port: "6000"
+        dapr.io/enable-api-logging: "true"
+    spec:
+      containers:
+      - name: event-processor
+        image: todo-event-processor:v5.0.0
+        imagePullPolicy: Never
+        ports:
+        - containerPort: 6000
+          name: http
+        env:
+        - name: DAPR_HTTP_PORT
+          value: "3500"
+        - name: PUBSUB_NAME
+          value: "todo-pubsub"
+        - name: BACKEND_URL
+          value: "http://todo-backend-svc:8000"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 6000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 6000
+          initialDelaySeconds: 5
+          periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-event-processor-svc
+  namespace: default
+spec:
+  type: ClusterIP
+  selector:
+    app: todo-event-processor
+  ports:
+  - port: 6000
+    targetPort: 6000
+    name: http

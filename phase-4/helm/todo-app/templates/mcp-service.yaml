@@ -1,0 +1,22 @@
+{{- if .Values.mcp.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "todo-app.fullname" . }}-mcp-svc
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app: {{ .Values.mcp.name }}
+spec:
+  type: {{ .Values.mcp.service.type }}
+  selector:
+    app: {{ .Values.mcp.name }}
+  ports:
+  - port: {{ .Values.mcp.service.port }}
+    targetPort: {{ .Values.mcp.service.port }}
+    {{- if eq .Values.mcp.service.type "NodePort" }}
+    nodePort: {{ .Values.mcp.service.nodePort }}
+    {{- end }}
+    protocol: TCP
+    name: http
+{{- end }}

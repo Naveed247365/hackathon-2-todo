@@ -1,0 +1,55 @@
+{{- if .Values.mcp.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "todo-app.fullname" . }}-mcp
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+    app: {{ .Values.mcp.name }}
+spec:
+  replicas: {{ .Values.mcp.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.mcp.name }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.mcp.name }}
+    spec:
+      containers:
+      - name: {{ .Values.mcp.name }}
+        image: "{{ .Values.mcp.image.repository }}:{{ .Values.mcp.image.tag }}"
+        imagePullPolicy: {{ .Values.global.imagePullPolicy }}
+        ports:
+        - containerPort: {{ .Values.mcp.service.port }}
+          name: http
+        envFrom:
+        - configMapRef:
+            name: {{ include "todo-app.fullname" . }}-config
+        - secretRef:
+            name: {{ include "todo-app.fullname" . }}-secrets
+        resources:
+          requests:
+            memory: {{ .Values.mcp.resources.requests.memory | quote }}
+            cpu: {{ .Values.mcp.resources.requests.cpu | quote }}
+          limits:
+            memory: {{ .Values.mcp.resources.limits.memory | quote }}
+            cpu: {{ .Values.mcp.resources.limits.cpu | quote }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.mcp.probes.liveness.path }}
+            port: {{ .Values.mcp.service.port }}
+          initialDelaySeconds: {{ .Values.mcp.probes.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.mcp.probes.liveness.periodSeconds }}
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.mcp.probes.readiness.path }}
+            port: {{ .Values.mcp.service.port }}
+          initialDelaySeconds: {{ .Values.mcp.probes.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.mcp.probes.readiness.periodSeconds }}
+          timeoutSeconds: 5
+          failureThreshold: 3
+{{- end }}

@@ -1,0 +1,113 @@
+# Default values for todo-app
+# This is a YAML-formatted file.
+
+# Global settings
+global:
+  namespace: default
+  imagePullPolicy: Never  # Use local images for Minikube
+
+# Backend Configuration
+backend:
+  enabled: true
+  name: backend
+  replicaCount: 1
+  image:
+    repository: todo-backend
+    tag: v1.0.0
+  service:
+    type: NodePort
+    port: 8000
+    nodePort: 30001
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  probes:
+    liveness:
+      path: /health
+      initialDelaySeconds: 15
+      periodSeconds: 10
+    readiness:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+# Frontend Configuration
+frontend:
+  enabled: true
+  name: frontend
+  replicaCount: 1
+  image:
+    repository: todo-frontend
+    tag: v1.0.0
+  service:
+    type: NodePort
+    port: 3000
+    nodePort: 30002
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  probes:
+    liveness:
+      path: /api/health
+      initialDelaySeconds: 15
+      periodSeconds: 10
+    readiness:
+      path: /api/health
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+# MCP Server Configuration
+mcp:
+  enabled: true
+  name: mcp-server
+  replicaCount: 1
+  image:
+    repository: todo-mcp
+    tag: v1.0.0
+  service:
+    type: NodePort
+    port: 5000
+    nodePort: 30003
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "250m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  probes:
+    liveness:
+      path: /health
+      initialDelaySeconds: 15
+      periodSeconds: 10
+    readiness:
+      path: /health
+      initialDelaySeconds: 10
+      periodSeconds: 10
+
+# Configuration
+config:
+  jwt:
+    algorithm: "HS256"
+    expireHours: "24"
+  cors:
+    origins: "http://localhost:3000,http://localhost:30002"
+  mcp:
+    backendUrl: "http://backend-service:8000"
+    port: "5000"
+    llmModel: "openai/gpt-3.5-turbo"
+
+# Secrets (override in production)
+secrets:
+  # Base64 encoded values
+  jwtSecret: ""  # Set during deployment
+  databaseUrl: ""  # Set during deployment
+  openrouterApiKey: ""  # Set during deployment

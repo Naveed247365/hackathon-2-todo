@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: todo-event-processor
+  namespace: todo-app
+  labels:
+    app: todo-event-processor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: todo-event-processor
+  template:
+    metadata:
+      labels:
+        app: todo-event-processor
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "todo-event-processor"
+        dapr.io/app-port: "6000"
+    spec:
+      containers:
+      - name: event-processor
+        image: ${OCIR_REGION}.ocir.io/${TENANCY_NAMESPACE}/todo-event-processor:v5.0.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 6000
+          name: http
+        env:
+        - name: DAPR_HTTP_PORT
+          value: "3500"
+        - name: PUBSUB_NAME
+          value: "todo-pubsub"
+        - name: BACKEND_URL
+          value: "http://todo-backend-svc:8000"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 6000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+      imagePullSecrets:
+      - name: ocir-secret
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: todo-event-processor-svc
+  namespace: todo-app
+spec:
+  type: ClusterIP
+  selector:
+    app: todo-event-processor
+  ports:
+  - port: 6000
+    targetPort: 6000
+    name: http

@@ -1,0 +1,17 @@
+apiVersion: v2
+name: todo-app
+description: Todo Application Helm Chart - Full stack deployment with Backend, Frontend, and MCP Server
+type: application
+version: 1.0.0
+appVersion: "4.0.0"
+keywords:
+  - todo
+  - fastapi
+  - nextjs
+  - kubernetes
+  - hackathon
+maintainers:
+  - name: Hackathon Team
+home: https://github.com/hackathon/todo-app
+sources:
+  - https://github.com/hackathon/todo-app

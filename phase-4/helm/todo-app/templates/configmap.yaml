@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "todo-app.fullname" . }}-config
+  namespace: {{ .Values.global.namespace }}
+  labels:
+    {{- include "todo-app.labels" . | nindent 4 }}
+data:
+  # Backend configuration
+  JWT_ALGORITHM: {{ .Values.config.jwt.algorithm | quote }}
+  ACCESS_TOKEN_EXPIRE_HOURS: {{ .Values.config.jwt.expireHours | quote }}
+  CORS_ORIGINS: {{ .Values.config.cors.origins | quote }}
+
+  # Frontend configuration
+  NEXT_PUBLIC_API_URL: "http://localhost:{{ .Values.backend.service.nodePort }}"
+  NEXT_PUBLIC_MCP_SERVER_URL: "http://localhost:{{ .Values.mcp.service.nodePort }}"
+
+  # MCP Server configuration
+  BACKEND_URL: {{ .Values.config.mcp.backendUrl | quote }}
+  MCP_PORT: {{ .Values.config.mcp.port | quote }}
+  LLM_MODEL: {{ .Values.config.mcp.llmModel | quote }}
