@@ -2,12 +2,12 @@
  * TodoForm component for creating new todos (Phase 5 enhanced).
  */
 import { useState, FormEvent } from 'react';
-import { PriorityLevel, RecurrencePattern } from '../types';
+import { Priority, RecurrencePattern } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface TodoFormData {
   title: string;
-  priority?: PriorityLevel;
+  priority?: Priority;
   tags?: string[];
   due_date?: string;
   is_recurring?: boolean;
@@ -20,7 +20,7 @@ interface TodoFormProps {
 
 export default function TodoForm({ onSubmit }: TodoFormProps) {
   const [title, setTitle] = useState('');
-  const [priority, setPriority] = useState<PriorityLevel>('Medium');
+  const [priority, setPriority] = useState<Priority>('Medium');
   const [tagsInput, setTagsInput] = useState('');
   const [dueDate, setDueDate] = useState('');
   const [isRecurring, setIsRecurring] = useState(false);
@@ -132,7 +132,7 @@ export default function TodoForm({ onSubmit }: TodoFormProps) {
             </label>
             <select
               value={priority}
-              onChange={(e) => setPriority(e.target.value as PriorityLevel)}
+              onChange={(e) => setPriority(e.target.value as Priority)}
               style={{
                 width: '100%',
                 padding: '12px',

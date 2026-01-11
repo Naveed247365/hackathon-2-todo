@@ -1,11 +1,11 @@
 /**
  * TodoList component for displaying todos (Phase 5 enhanced).
  */
-import { TodoResponse } from '../types';
+import { Todo } from '../types';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface TodoListProps {
-  todos: TodoResponse[];
+  todos: Todo[];
   onComplete: (id: number) => void;
   onUpdate: (id: number, title: string) => void;
   onDelete: (id: number) => void;
@@ -34,7 +34,7 @@ export default function TodoList({ todos, onComplete, onUpdate, onDelete }: Todo
   }
 
   // Helper: Check if todo is overdue
-  const isOverdue = (todo: TodoResponse): boolean => {
+  const isOverdue = (todo: Todo): boolean => {
     if (!todo.due_date || todo.status === 'completed') return false;
     const dueDate = new Date(todo.due_date);
     const today = new Date();

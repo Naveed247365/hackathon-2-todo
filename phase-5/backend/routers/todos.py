@@ -90,7 +90,7 @@ def complete_todo(
             title=todo.title,
             status="pending",
             priority=todo.priority,
-            tags=todo.tags,
+            tags=todo.tags,  # Already JSON string
             due_date=next_due_date,
             is_recurring=True,
             recurrence_pattern=todo.recurrence_pattern,
