@@ -1,0 +1,21 @@
+# Dockerfile for Phase-5 FastAPI Backend
+FROM python:3.11-slim
+
+WORKDIR /app
+
+# Install dependencies
+COPY phase-5/backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy application code
+COPY phase-5/backend/ .
+
+# Expose backend port
+EXPOSE 8000
+
+# Health check endpoint
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+    CMD python -c "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')" || exit 1
+
+# Run uvicorn server
+CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

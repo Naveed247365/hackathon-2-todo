@@ -1,4 +1,5 @@
 """Todo CRUD endpoints with data isolation."""
+import json
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from database import get_db
@@ -7,6 +8,30 @@ from schemas import TodoCreate, TodoUpdate, TodoResponse, TodoListResponse
 from auth import get_current_user
 
 router = APIRouter(prefix="/api/todos", tags=["todos"])
+
+
+def todo_to_response(todo: Todo) -> dict:
+    """Convert Todo model to response dict with tags as list."""
+    tags = []
+    if todo.tags:
+        try:
+            tags = json.loads(todo.tags) if isinstance(todo.tags, str) else todo.tags
+        except (json.JSONDecodeError, TypeError):
+            tags = []
+
+    return {
+        "id": todo.id,
+        "user_id": todo.user_id,
+        "title": todo.title,
+        "status": todo.status,
+        "created_at": todo.created_at,
+        "priority": todo.priority or "Medium",
+        "tags": tags,
+        "due_date": todo.due_date,
+        "is_recurring": todo.is_recurring,
+        "recurrence_pattern": todo.recurrence_pattern,
+        "parent_todo_id": todo.parent_todo_id
+    }
 
 
 @router.post("", response_model=TodoResponse, status_code=status.HTTP_201_CREATED)
@@ -21,7 +46,7 @@ def create_todo(
         title=todo_data.title.strip(),
         status="pending",
         priority=todo_data.priority.value if todo_data.priority else "Medium",
-        tags=todo_data.tags or [],
+        tags=json.dumps(todo_data.tags or []),  # Serialize to JSON string
         due_date=todo_data.due_date,
         is_recurring=todo_data.is_recurring or False,
         recurrence_pattern=todo_data.recurrence_pattern.value if todo_data.recurrence_pattern else None
@@ -29,7 +54,7 @@ def create_todo(
     db.add(new_todo)
     db.commit()
     db.refresh(new_todo)
-    return new_todo
+    return todo_to_response(new_todo)
 
 
 @router.get("", response_model=TodoListResponse)
@@ -39,7 +64,7 @@ def list_todos(
 ):
     """List all todos for the authenticated user (data isolation)."""
     todos = db.query(Todo).filter(Todo.user_id == current_user).order_by(Todo.id).all()
-    return TodoListResponse(todos=todos)
+    return TodoListResponse(todos=[todo_to_response(t) for t in todos])
 
 
 @router.patch("/{todo_id}/complete", response_model=TodoResponse)
@@ -90,7 +115,7 @@ def complete_todo(
             title=todo.title,
             status="pending",
             priority=todo.priority,
-            tags=todo.tags,
+            tags=todo.tags,  # Already JSON string
             due_date=next_due_date,
             is_recurring=True,
             recurrence_pattern=todo.recurrence_pattern,
@@ -99,7 +124,7 @@ def complete_todo(
         db.add(next_todo)
         db.commit()
 
-    return todo
+    return todo_to_response(todo)
 
 
 @router.patch("/{todo_id}", response_model=TodoResponse)
@@ -133,7 +158,7 @@ def update_todo(
     if todo_data.priority is not None:
         todo.priority = todo_data.priority.value
     if todo_data.tags is not None:
-        todo.tags = todo_data.tags
+        todo.tags = json.dumps(todo_data.tags)  # Serialize to JSON string
     if todo_data.due_date is not None:
         todo.due_date = todo_data.due_date
     if todo_data.is_recurring is not None:
@@ -143,7 +168,7 @@ def update_todo(
 
     db.commit()
     db.refresh(todo)
-    return todo
+    return todo_to_response(todo)
 
 
 @router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
