@@ -1,10 +1,25 @@
 /**
  * Better Auth API route handler.
- * Proxies auth requests to FastAPI backend.
+ * Maps Better Auth endpoints to FastAPI backend auth endpoints.
  */
 import type { NextApiRequest, NextApiResponse } from 'next';
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const BACKEND_URL = 'http://localhost:8000';
+
+/**
+ * Map Better Auth paths to backend paths.
+ * Better Auth uses: /api/auth/sign-in/email, /api/auth/sign-up/email
+ * Backend uses: /api/auth/login, /api/auth/signup
+ */
+function mapAuthPath(path: string): string {
+  if (path === 'sign-in/email' || path === 'sign-in') {
+    return 'login';
+  }
+  if (path === 'sign-up/email' || path === 'sign-up') {
+    return 'signup';
+  }
+  return path;
+}
 
 export default async function handler(
   req: NextApiRequest,
@@ -12,9 +27,10 @@ export default async function handler(
 ) {
   const { all } = req.query;
   const path = Array.isArray(all) ? all.join('/') : all || '';
+  const mappedPath = mapAuthPath(path);
 
   try {
-    const backendUrl = `${BACKEND_URL}/api/auth/${path}`;
+    const backendUrl = `${BACKEND_URL}/api/auth/${mappedPath}`;
     const response = await fetch(backendUrl, {
       method: req.method || 'GET',
       headers: {

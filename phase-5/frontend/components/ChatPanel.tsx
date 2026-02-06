@@ -11,7 +11,7 @@
 import { useState, useRef, useEffect, FormEvent } from 'react';
 import { useTheme } from '../contexts/ThemeContext';
 
-const MCP_SERVER_URL = process.env.NEXT_PUBLIC_MCP_SERVER_URL || 'http://localhost:5000';
+const MCP_SERVER_URL = process.env.NEXT_PUBLIC_MCP_SERVER_URL || '';
 
 interface Message {
   role: 'user' | 'assistant';
