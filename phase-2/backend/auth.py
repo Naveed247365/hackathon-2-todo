@@ -1,4 +1,6 @@
-"""Authentication utilities for JWT and password management."""
+"""Authentication utilities for JWT and password management.
+Uses BETTER_AUTH_SECRET for JWT verification (shared secret with Better Auth frontend).
+"""
 import os
 from datetime import datetime, timedelta
 import bcrypt
@@ -9,14 +11,15 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-# JWT configuration
-JWT_SECRET = os.getenv("JWT_SECRET")
-if not JWT_SECRET:
-    raise ValueError("JWT_SECRET environment variable must be set")
+# JWT configuration - uses BETTER_AUTH_SECRET (shared with Better Auth frontend)
+# Falls back to JWT_SECRET for backwards compatibility
+BETTER_AUTH_SECRET = os.getenv("BETTER_AUTH_SECRET") or os.getenv("JWT_SECRET")
+if not BETTER_AUTH_SECRET:
+    raise ValueError("BETTER_AUTH_SECRET (or JWT_SECRET) environment variable must be set")
 
-# Remove quotes if present in JWT_SECRET
-if JWT_SECRET.startswith('"') and JWT_SECRET.endswith('"'):
-    JWT_SECRET = JWT_SECRET[1:-1]
+# Remove quotes if present
+if BETTER_AUTH_SECRET.startswith('"') and BETTER_AUTH_SECRET.endswith('"'):
+    BETTER_AUTH_SECRET = BETTER_AUTH_SECRET[1:-1]
 
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
 ACCESS_TOKEN_EXPIRE_HOURS = int(os.getenv("ACCESS_TOKEN_EXPIRE_HOURS", "24"))
@@ -27,7 +30,6 @@ security = HTTPBearer()
 
 def hash_password(password: str) -> str:
     """Hash a password using bcrypt."""
-    # Encode password to bytes, generate salt, hash
     password_bytes = password.encode('utf-8')
     salt = bcrypt.gensalt()
     hashed = bcrypt.hashpw(password_bytes, salt)
@@ -49,14 +51,14 @@ def create_access_token(user_id: int, email: str) -> str:
         "email": email,
         "exp": expire
     }
-    encoded_jwt = jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
+    encoded_jwt = jwt.encode(to_encode, BETTER_AUTH_SECRET, algorithm=JWT_ALGORITHM)
     return encoded_jwt
 
 
 def verify_token(token: str) -> dict:
-    """Verify JWT token and return payload. Raises HTTPException if invalid."""
+    """Verify JWT token and return payload. Supports Better Auth JWT plugin tokens."""
     try:
-        payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+        payload = jwt.decode(token, BETTER_AUTH_SECRET, algorithms=[JWT_ALGORITHM])
         user_id: str = payload.get("sub")
         if user_id is None:
             raise HTTPException(

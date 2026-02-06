@@ -1,9 +1,10 @@
 /**
- * Login page for user authentication.
+ * Login page using Better Auth signIn.email().
  */
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/router';
-import { apiCall, setToken } from '@/lib/api';
+import { signIn } from '@/lib/auth';
+import { setToken } from '@/lib/api';
 
 export default function Login() {
   const router = useRouter();
@@ -18,6 +19,19 @@ export default function Login() {
     setLoading(true);
 
     try {
+      // Try Better Auth signIn first
+      const result = await signIn.email({ email, password });
+      if (result?.data?.token) {
+        setToken(result.data.token);
+        router.push('/todos');
+        return;
+      }
+      if (result?.error) {
+        throw new Error(result.error.message || 'Login failed');
+      }
+
+      // Fallback: direct API call to backend
+      const { apiCall } = await import('@/lib/api');
       const response = await apiCall('/api/auth/login', 'POST', { email, password }, false);
       setToken(response.token);
       router.push('/todos');

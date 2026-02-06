@@ -1,9 +1,8 @@
 """Todo CRUD endpoints with data isolation."""
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlmodel import Session, select
 from database import get_db
-from models import Todo
-from schemas import TodoCreate, TodoUpdate, TodoResponse, TodoListResponse
+from models import Todo, TodoCreate, TodoUpdate, TodoResponse, TodoListResponse
 from auth import get_current_user
 
 router = APIRouter(prefix="/api/todos", tags=["todos"])
@@ -33,7 +32,8 @@ def list_todos(
     db: Session = Depends(get_db)
 ):
     """List all todos for the authenticated user (data isolation)."""
-    todos = db.query(Todo).filter(Todo.user_id == current_user).order_by(Todo.id).all()
+    statement = select(Todo).where(Todo.user_id == current_user).order_by(Todo.id)
+    todos = db.exec(statement).all()
     return TodoListResponse(todos=todos)
 
 
@@ -44,7 +44,7 @@ def complete_todo(
     db: Session = Depends(get_db)
 ):
     """Mark todo as completed (ownership check enforced)."""
-    todo = db.query(Todo).filter(Todo.id == todo_id).first()
+    todo = db.get(Todo, todo_id)
 
     if not todo:
         raise HTTPException(
@@ -52,15 +52,14 @@ def complete_todo(
             detail=f"Todo with ID {todo_id} not found"
         )
 
-    # Ownership check
     if todo.user_id != current_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to access this todo"
         )
 
-    # Idempotent - allow completing already completed todo
     todo.status = "completed"
+    db.add(todo)
     db.commit()
     db.refresh(todo)
     return todo
@@ -74,7 +73,7 @@ def update_todo(
     db: Session = Depends(get_db)
 ):
     """Update todo title (ownership check enforced)."""
-    todo = db.query(Todo).filter(Todo.id == todo_id).first()
+    todo = db.get(Todo, todo_id)
 
     if not todo:
         raise HTTPException(
@@ -82,7 +81,6 @@ def update_todo(
             detail=f"Todo with ID {todo_id} not found"
         )
 
-    # Ownership check
     if todo.user_id != current_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
@@ -90,6 +88,7 @@ def update_todo(
         )
 
     todo.title = todo_data.title.strip()
+    db.add(todo)
     db.commit()
     db.refresh(todo)
     return todo
@@ -102,7 +101,7 @@ def delete_todo(
     db: Session = Depends(get_db)
 ):
     """Delete todo (ownership check enforced)."""
-    todo = db.query(Todo).filter(Todo.id == todo_id).first()
+    todo = db.get(Todo, todo_id)
 
     if not todo:
         raise HTTPException(
@@ -110,7 +109,6 @@ def delete_todo(
             detail=f"Todo with ID {todo_id} not found"
         )
 
-    # Ownership check
     if todo.user_id != current_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,

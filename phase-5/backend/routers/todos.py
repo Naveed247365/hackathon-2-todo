@@ -1,16 +1,40 @@
 """Todo CRUD endpoints with data isolation."""
+import os
+import logging
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlmodel import Session, select
 from database import get_db
-from models import Todo
-from schemas import TodoCreate, TodoUpdate, TodoResponse, TodoListResponse
+from models import Todo, TodoCreate, TodoUpdate, TodoResponse, TodoListResponse
 from auth import get_current_user
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/todos", tags=["todos"])
 
+# Dapr configuration for event publishing
+DAPR_HTTP_PORT = os.getenv("DAPR_HTTP_PORT", "3500")
+PUBSUB_NAME = os.getenv("PUBSUB_NAME", "todo-pubsub")
+
+
+async def publish_event(topic: str, data: dict):
+    """Publish event to Dapr pub/sub (Kafka/Redpanda)."""
+    try:
+        import httpx
+        async with httpx.AsyncClient() as client:
+            response = await client.post(
+                f"http://localhost:{DAPR_HTTP_PORT}/v1.0/publish/{PUBSUB_NAME}/{topic}",
+                json=data
+            )
+            if response.status_code in (200, 204):
+                logger.info(f"Published event to {topic}: {data.get('title', 'N/A')}")
+            else:
+                logger.warning(f"Failed to publish event to {topic}: {response.status_code}")
+    except Exception as e:
+        logger.warning(f"Event publish failed (non-blocking): {e}")
+
 
 @router.post("", response_model=TodoResponse, status_code=status.HTTP_201_CREATED)
-def create_todo(
+async def create_todo(
     todo_data: TodoCreate,
     current_user: int = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -29,6 +53,20 @@ def create_todo(
     db.add(new_todo)
     db.commit()
     db.refresh(new_todo)
+
+    # Publish task-created event
+    await publish_event("task-created", {
+        "task_id": new_todo.id,
+        "user_id": current_user,
+        "title": new_todo.title,
+        "priority": new_todo.priority,
+        "tags": new_todo.tags,
+        "due_date": str(new_todo.due_date) if new_todo.due_date else None,
+        "is_recurring": new_todo.is_recurring,
+        "recurrence_pattern": new_todo.recurrence_pattern,
+        "action": "created"
+    })
+
     return new_todo
 
 
@@ -38,18 +76,19 @@ def list_todos(
     db: Session = Depends(get_db)
 ):
     """List all todos for the authenticated user (data isolation)."""
-    todos = db.query(Todo).filter(Todo.user_id == current_user).order_by(Todo.id).all()
+    statement = select(Todo).where(Todo.user_id == current_user).order_by(Todo.id)
+    todos = db.exec(statement).all()
     return TodoListResponse(todos=todos)
 
 
 @router.patch("/{todo_id}/complete", response_model=TodoResponse)
-def complete_todo(
+async def complete_todo(
     todo_id: int,
     current_user: int = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
-    """Mark todo as completed (ownership check enforced). Auto-generates next occurrence for recurring tasks."""
-    todo = db.query(Todo).filter(Todo.id == todo_id).first()
+    """Mark todo as completed. Auto-generates next occurrence for recurring tasks."""
+    todo = db.get(Todo, todo_id)
 
     if not todo:
         raise HTTPException(
@@ -57,23 +96,34 @@ def complete_todo(
             detail=f"Todo with ID {todo_id} not found"
         )
 
-    # Ownership check
     if todo.user_id != current_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to access this todo"
         )
 
-    # Idempotent - allow completing already completed todo
     todo.status = "completed"
+    db.add(todo)
     db.commit()
     db.refresh(todo)
 
+    # Publish task-completed event
+    await publish_event("task-completed", {
+        "task_id": todo.id,
+        "user_id": current_user,
+        "title": todo.title,
+        "priority": todo.priority,
+        "tags": todo.tags,
+        "due_date": str(todo.due_date) if todo.due_date else None,
+        "is_recurring": todo.is_recurring,
+        "recurrence_pattern": todo.recurrence_pattern,
+        "action": "completed"
+    })
+
     # Auto-generate next occurrence for recurring tasks
     if todo.is_recurring and todo.recurrence_pattern:
-        from datetime import datetime, timedelta
+        from datetime import timedelta
 
-        # Calculate next due date
         next_due_date = None
         if todo.due_date:
             if todo.recurrence_pattern == "Daily":
@@ -81,16 +131,14 @@ def complete_todo(
             elif todo.recurrence_pattern == "Weekly":
                 next_due_date = todo.due_date + timedelta(weeks=1)
             elif todo.recurrence_pattern == "Monthly":
-                # Approximate monthly recurrence (30 days)
                 next_due_date = todo.due_date + timedelta(days=30)
 
-        # Create next occurrence
         next_todo = Todo(
             user_id=current_user,
             title=todo.title,
             status="pending",
             priority=todo.priority,
-            tags=todo.tags,  # Already JSON string
+            tags=todo.tags,
             due_date=next_due_date,
             is_recurring=True,
             recurrence_pattern=todo.recurrence_pattern,
@@ -103,14 +151,14 @@ def complete_todo(
 
 
 @router.patch("/{todo_id}", response_model=TodoResponse)
-def update_todo(
+async def update_todo(
     todo_id: int,
     todo_data: TodoUpdate,
     current_user: int = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Update todo with Phase 5 fields (ownership check enforced)."""
-    todo = db.query(Todo).filter(Todo.id == todo_id).first()
+    todo = db.get(Todo, todo_id)
 
     if not todo:
         raise HTTPException(
@@ -118,14 +166,12 @@ def update_todo(
             detail=f"Todo with ID {todo_id} not found"
         )
 
-    # Ownership check
     if todo.user_id != current_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to access this todo"
         )
 
-    # Update fields if provided
     if todo_data.title is not None:
         todo.title = todo_data.title.strip()
     if todo_data.status is not None:
@@ -141,19 +187,20 @@ def update_todo(
     if todo_data.recurrence_pattern is not None:
         todo.recurrence_pattern = todo_data.recurrence_pattern.value if todo_data.recurrence_pattern else None
 
+    db.add(todo)
     db.commit()
     db.refresh(todo)
     return todo
 
 
 @router.delete("/{todo_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_todo(
+async def delete_todo(
     todo_id: int,
     current_user: int = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """Delete todo (ownership check enforced)."""
-    todo = db.query(Todo).filter(Todo.id == todo_id).first()
+    todo = db.get(Todo, todo_id)
 
     if not todo:
         raise HTTPException(
@@ -161,12 +208,19 @@ def delete_todo(
             detail=f"Todo with ID {todo_id} not found"
         )
 
-    # Ownership check
     if todo.user_id != current_user:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You don't have permission to access this todo"
         )
+
+    # Publish delete event before deletion
+    await publish_event("task-deleted", {
+        "task_id": todo.id,
+        "user_id": current_user,
+        "title": todo.title,
+        "action": "deleted"
+    })
 
     db.delete(todo)
     db.commit()
