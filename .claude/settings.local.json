@@ -87,7 +87,13 @@
       "Bash(ping:*)",
       "mcp__git__git_status",
       "mcp__git__git_log",
-      "mcp__git__git_add"
+      "mcp__git__git_add",
+      "Bash(minikube status:*)",
+      "Bash(kubectl describe:*)",
+      "Bash(Select-String -Pattern \"Error|Warning|secret|configmap\" -Context 0,2)",
+      "Bash(kubectl get:*)",
+      "Bash(kubectl logs:*)",
+      "Bash(kubectl exec:*)"
     ]
   },
   "enableAllProjectMcpServers": true,

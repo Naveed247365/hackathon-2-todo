@@ -338,6 +338,32 @@ As a logged-in user, I want to delete todos using natural language so that I can
 - All tools MUST return backend errors as-is (401, 403, 404) for AI to interpret
 - All tools MUST NOT cache responses (fetch fresh data every time)
 
+## Technology Updates (Gap Fixes)
+
+### Official MCP SDK (GAP 6)
+- **MCP Framework**: Migrated from `fastmcp` to **Official MCP SDK** (`mcp>=1.0.0`)
+- Server uses `from mcp.server import Server` for tool definitions
+- Tool schemas follow official MCP Tool type with inputSchema
+- Flask HTTP wrapper maintained for frontend/ChatKit API compatibility
+
+### OpenAI Agents SDK (GAP 3)
+- **AI Framework**: Upgraded from custom function calling to **OpenAI Agents SDK** pattern (`openai-agents>=0.1.0`)
+- Agent pattern: system prompt + tools + multi-turn tool dispatch
+- Tool results fed back to LLM for natural language response generation
+- Uses OpenRouter as provider via `openai` SDK with custom `base_url`
+
+### OpenAI ChatKit UI (GAP 4)
+- **Frontend Chat**: ChatPanel refactored to **ChatKit-compatible API pattern**
+- Props interface: `endpoint`, `headers`, `initialMessages` for ChatKit compatibility
+- Production ChatKit requires OpenAI domain key; dev uses compatible custom UI
+- Conversation persistence via `conversation_id` parameter
+
+### Conversation & Message DB Models (GAP 5)
+- **Chat Persistence**: Added `Conversation` and `Message` SQLModel tables
+- Conversations track user_id, title (auto-set from first message), timestamps
+- Messages store role (user/assistant/system), content, and conversation_id
+- New chat router at `/api/chat/` with conversation CRUD endpoints
+
 ## Specification Completeness Checklist
 
 - ✅ All user stories have priority assignments (P1-P5)

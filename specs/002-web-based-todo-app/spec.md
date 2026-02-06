@@ -383,6 +383,22 @@ As a logged-in user, I want to delete my todos so that I can remove tasks that a
 **Response 204 No Content**
 **Errors**: 401 (unauthorized), 403 (not owner), 404 (not found)
 
+## Technology Updates (Gap Fixes)
+
+### SQLModel Migration (GAP 1)
+- **ORM**: Migrated from SQLAlchemy to **SQLModel** (`sqlmodel>=0.0.14`)
+- SQLModel unifies Pydantic models + SQLAlchemy ORM into single class definitions
+- `schemas.py` merged into `models.py` - SQLModel classes serve as both ORM models and request/response schemas
+- Query syntax: `db.exec(select(Model))` replaces `db.query(Model)`
+- Session management: `with Session(engine)` replaces `SessionLocal()`
+
+### Better Auth Integration (GAP 2)
+- **Authentication**: Upgraded from custom JWT to **Better Auth** with JWT plugin (`better-auth>=1.2.0`)
+- Frontend uses `better-auth/react` with `jwtClient()` plugin for session management
+- Backend uses `BETTER_AUTH_SECRET` (shared secret) for JWT verification - backwards compatible with `JWT_SECRET`
+- Auth API route handler at `pages/api/auth/[...all].ts` proxies to FastAPI backend
+- Login/Signup pages use `signIn.email()` / `signUp.email()` with fallback to direct API calls
+
 ## Specification Completeness Checklist
 
 - ✅ All user stories have priority assignments (P1-P5)

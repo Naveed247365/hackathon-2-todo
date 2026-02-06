@@ -307,6 +307,21 @@ The following items are explicitly **excluded** from Phase 4:
 
 ---
 
+## Technology Updates (Gap Fixes)
+
+### AI-Powered Kubernetes Tools (GAP 7)
+- **kubectl-ai**: kubectl plugin for generating K8s manifests from natural language
+  - Installation via krew or Go install
+  - Supports OpenRouter as AI provider
+  - Used for generating deployments, services, and Dapr components
+- **kagent**: AI agent for direct Kubernetes cluster management
+  - Natural language cluster queries and debugging
+  - Installation via pip or Helm
+- **Docker Gordon**: Docker Desktop's built-in AI assistant (v4.38+)
+  - Dockerfile optimization and container debugging
+  - Note: Requires Docker Desktop; not available in all editions
+- Full documentation: `phase-4/AI_TOOLS_USAGE.md`
+
 ## Specification Completeness Checklist
 
 Before proceeding to planning (`/sp.plan`), verify:

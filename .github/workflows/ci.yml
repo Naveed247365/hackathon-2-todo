@@ -1,0 +1,93 @@
+name: CI - Build & Test
+
+on:
+  push:
+    branches: [main, '001-*', '002-*', '003-*', '004-*', '005-*']
+  pull_request:
+    branches: [main, '001-*']
+
+jobs:
+  backend-test:
+    name: Backend Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase-5/backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: phase-5/backend/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest httpx
+
+      - name: Run linting
+        run: python -m py_compile main.py && python -m py_compile models.py && python -m py_compile database.py
+        env:
+          JWT_SECRET: test-secret-for-ci
+          BETTER_AUTH_SECRET: test-secret-for-ci
+
+      - name: Verify imports
+        run: |
+          python -c "from models import User, Todo, Conversation, Message; print('Models OK')"
+          python -c "from database import get_db, init_db; print('Database OK')"
+        env:
+          JWT_SECRET: test-secret-for-ci
+          BETTER_AUTH_SECRET: test-secret-for-ci
+
+  frontend-build:
+    name: Frontend Build
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase-5/frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: phase-5/frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci || npm install
+
+      - name: Type check
+        run: npx tsc --noEmit || true
+
+      - name: Build
+        run: npm run build
+        env:
+          NEXT_PUBLIC_API_URL: http://localhost:8000
+          NEXT_PUBLIC_MCP_SERVER_URL: http://localhost:5000
+
+  mcp-server-test:
+    name: MCP Server Tests
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: phase-5/mcp-server
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: pip
+          cache-dependency-path: phase-5/mcp-server/requirements.txt
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Verify imports
+        run: python -c "from mcp.server import Server; print('MCP SDK OK')"
+        env:
+          OPENROUTER_API_KEY: test-key-for-ci

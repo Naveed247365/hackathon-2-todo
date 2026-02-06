@@ -15,7 +15,11 @@ spec:
       labels:
         app: todo-mcp
       annotations:
-        dapr.io/enabled: "false"  # MCP doesn't need Dapr sidecar
+        # Dapr sidecar enabled for service invocation
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "todo-mcp"
+        dapr.io/app-port: "5000"
+        dapr.io/enable-api-logging: "true"
     spec:
       containers:
       - name: mcp
@@ -24,6 +28,11 @@ spec:
         ports:
         - containerPort: 5000
           name: http
+        env:
+        - name: USE_DAPR
+          value: "true"
+        - name: DAPR_HTTP_PORT
+          value: "3500"
         envFrom:
         - configMapRef:
             name: todo-config

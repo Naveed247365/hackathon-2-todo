@@ -5,7 +5,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 from database import init_db
-from routers import auth, todos
+from routers import auth, todos, chat
 
 load_dotenv()
 
@@ -35,6 +35,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth.router)
 app.include_router(todos.router)
+app.include_router(chat.router)
 
 
 @app.get("/")

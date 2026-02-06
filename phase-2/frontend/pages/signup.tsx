@@ -1,9 +1,10 @@
 /**
- * Signup page for user registration.
+ * Signup page using Better Auth signUp.email().
  */
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/router';
-import { apiCall, setToken } from '@/lib/api';
+import { signUp } from '@/lib/auth';
+import { setToken } from '@/lib/api';
 
 export default function Signup() {
   const router = useRouter();
@@ -20,7 +21,6 @@ export default function Signup() {
     e.preventDefault();
     setError('');
 
-    // Frontend validation
     if (!validateEmail(email)) {
       setError('Invalid email format');
       return;
@@ -34,6 +34,19 @@ export default function Signup() {
     setLoading(true);
 
     try {
+      // Try Better Auth signUp first
+      const result = await signUp.email({ email, password, name: email.split('@')[0] });
+      if (result?.data?.token) {
+        setToken(result.data.token);
+        router.push('/todos');
+        return;
+      }
+      if (result?.error) {
+        throw new Error(result.error.message || 'Signup failed');
+      }
+
+      // Fallback: direct API call to backend
+      const { apiCall } = await import('@/lib/api');
       const response = await apiCall('/api/auth/signup', 'POST', { email, password }, false);
       setToken(response.token);
       router.push('/todos');

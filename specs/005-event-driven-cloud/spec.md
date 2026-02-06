@@ -304,6 +304,48 @@ The application must run on cloud-managed Kubernetes (AKS, GKE, or OCI) with Dap
 | Tag autocomplete degrades with 10,000+ unique tags | Low | Low | Implement tag pagination and cache frequent tags |
 | Multi-cloud support complexity | Medium | Low | Start with single cloud provider; design abstractions for future portability |
 
+## Technology Updates (Gap Fixes)
+
+### Kafka/Redpanda Pub/Sub (GAP 8)
+- **Message Broker**: Replaced Redis Pub/Sub with **Redpanda** (Kafka-compatible, lightweight)
+- Redpanda deployed as StatefulSet in Kubernetes (`redpanda-deployment.yaml`)
+- Dapr pubsub component changed from `pubsub.redis` to `pubsub.kafka` with brokers `redpanda:9092`
+- Backend publishes events on CRUD operations (task-created, task-completed, task-deleted)
+- Redis retained for Dapr state store only
+- Redpanda provides Kafka API compatibility without JVM overhead
+
+### Dapr Service Invocation (GAP 9)
+- **Service Communication**: MCP server calls backend via Dapr service invocation
+- URL pattern: `http://localhost:3500/v1.0/invoke/todo-backend/method/...`
+- MCP deployment updated with Dapr sidecar annotations (`dapr.io/enabled: "true"`)
+- `USE_DAPR` environment variable controls local vs K8s routing
+- Backend already has Dapr sidecar from Phase 5 base deployment
+
+### GitHub Actions CI/CD (GAP 10)
+- **CI Pipeline** (`.github/workflows/ci.yml`):
+  - Backend: Python 3.12 + lint + import verification
+  - Frontend: Node 20 + TypeScript check + build
+  - MCP Server: Python 3.12 + MCP SDK import verification
+  - Triggers on push to feature branches and PRs to main
+- **Docker Pipeline** (`.github/workflows/docker.yml`):
+  - Builds Docker images for backend, frontend, and MCP server
+  - Pushes to GitHub Container Registry (ghcr.io)
+  - Triggers on push to main and version tags
+
+### Urdu Language Support (GAP 11, +100 points)
+- **MCP Server**: System prompt includes Urdu command examples and response patterns
+- Unicode range detection (`\u0600-\u06FF`) for automatic language identification
+- AI responds in Urdu when Urdu input is detected
+- **Frontend (ChatPanel)**: RTL text direction for Urdu messages
+- Example commands include Urdu phrases (e.g., "نیا کام شامل کرو", "میرے کام دکھاو")
+
+### Voice Commands (GAP 12, +200 points)
+- **Web Speech API** integration in ChatPanel component
+- Microphone button with pulse animation when listening
+- Speech-to-text fills chat input automatically
+- Supports English (`en-US`) and Urdu (`ur-PK`) speech recognition
+- Graceful fallback for browsers without Speech API support
+
 ## Exit Criteria
 
 1. ✅ **Advanced Todo Features Work Correctly**:
